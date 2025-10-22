@@ -42,8 +42,16 @@ export const verifyOptionalToken = async (req, res, next) => {
 
 // New middleware to verify admin access
 export const verifyAdmin = (req, res, next) => {
-    if (!req.user.isAdmin) {
+    if (req.user.isAdmin !== true) {
         return next(errorHandler(403, 'Access denied - Admin privileges required'));
+    }
+    next();
+};
+
+// New middleware to verify admin or manager access
+export const verifyAdminOrManager = (req, res, next) => {
+    if (req.user.isAdmin !== true && req.user.isManager !== true) {
+        return next(errorHandler(403, 'Access denied - Admin or Manager privileges required'));
     }
     next();
 };

@@ -1,12 +1,17 @@
-import { Alert, Button, Label, Spinner, TextInput } from 'flowbite-react'
+import { Alert, Button, Label, Spinner, TextInput, Checkbox } from 'flowbite-react'
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux';
-import { FaInfoCircle } from 'react-icons/fa';
+import { FaInfoCircle, FaUserShield, FaUserTie, FaCalculator, FaPaintBrush } from 'react-icons/fa';
 
 export default function SignUpPage() {
 
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    isAdmin: false,
+    isManager: false,
+    isAccountant: false,
+    isCreativeStaff: false
+  });
   const [errorMessage, setErrorMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
@@ -14,11 +19,12 @@ export default function SignUpPage() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (currentUser) {
-      navigate('/dashboard-director');
-    }
-  }, [currentUser, navigate]);
+  /*   useEffect(() => {
+      if (!currentUser.isAdmin) {
+        navigate('/dashboard-director');
+      }
+    }, [currentUser, navigate]);
+   */
 
   const validateForm = () => {
     const errors = {};
@@ -41,7 +47,11 @@ export default function SignUpPage() {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
+    if (e.target.type === 'checkbox') {
+      setFormData({ ...formData, [e.target.id]: e.target.checked });
+    } else {
+      setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -63,13 +73,14 @@ export default function SignUpPage() {
       });
       const data = await res.json();
       if (data.success === false) {
+        setLoading(false);
         return setErrorMessage(data.message);
       }
 
       setLoading(false);
 
       if (res.ok) {
-        navigate('/staff-sign-in');
+        navigate('/admin-dashboard');
       }
 
     } catch (error) {
@@ -121,10 +132,10 @@ export default function SignUpPage() {
 
         <div className='flex-1'>
           <Link to="/" className='self-center whitespace-nowrap text-sm sm:text-xl font-semibold dark:text-white focus:outline-none focus:ring-0'>
-            <span className='ml-0 text-5xl font-semibold'>Erdem's <span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Cafe</span></span>
+            <span className='ml-0 text-5xl font-semibold'><span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Agate</span> Ltd.</span>
           </Link>
           <p className='text-sm mt-5'>
-            Create a new staff account for the cafe management system.
+            Create a new staff account for the campaign agency management system.
           </p>
         </div>
         <div className='flex-1'>
@@ -183,7 +194,7 @@ export default function SignUpPage() {
                 <span className='text-red-500 text-sm'>{validationErrors.staffId}</span>
               )}
             </div>
-            <div className='flex flex-col w-full mb-3'>
+            <div className='flex flex-col w-full mb-0'>
               <Label value='Staff Password' />
               <div className='flex gap-1 w-full items-center'>
                 <div className='w-full'>
@@ -203,9 +214,64 @@ export default function SignUpPage() {
                 </div>
               </div>
             </div>
+
+            {/* Role Selection */}
+            <div className='flex flex-col w-full mb-1'>
+              <Label value='Staff Roles & Permissions' />
+              <div className='grid grid-cols-2 gap-4 mt-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600'>
+                <div className='flex items-center gap-2'>
+                  <Checkbox
+                    id='isAdmin'
+                    checked={formData.isAdmin || false}
+                    onChange={handleChange}
+                  />
+                  <Label htmlFor='isAdmin' className='flex items-center gap-2'>
+                    <FaUserShield className='text-red-500' />
+                    Admin
+                  </Label>
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Checkbox
+                    id='isManager'
+                    checked={formData.isManager || false}
+                    onChange={handleChange}
+                  />
+                  <Label htmlFor='isManager' className='flex items-center gap-2'>
+                    <FaUserTie className='text-blue-500' />
+                    Manager
+                  </Label>
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Checkbox
+                    id='isAccountant'
+                    checked={formData.isAccountant || false}
+                    onChange={handleChange}
+                  />
+                  <Label htmlFor='isAccountant' className='flex items-center gap-2'>
+                    <FaCalculator className='text-green-500' />
+                    Accountant
+                  </Label>
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Checkbox
+                    id='isCreativeStaff'
+                    checked={formData.isCreativeStaff || false}
+                    onChange={handleChange}
+                  />
+                  <Label htmlFor='isCreativeStaff' className='flex items-center gap-2'>
+                    <FaPaintBrush className='text-purple-500' />
+                    Creative Staff
+                  </Label>
+                </div>
+              </div>
+              <span className='text-xs text-gray-500 mt-1'>
+                Select the roles and permissions for this staff member. Multiple roles can be assigned.
+              </span>
+            </div>
+
             <span className='flex items-center text-sm text-gray-500'>
               <FaInfoCircle className='w-8 h-8 mr-2 text-gray-500' />
-              Staff permissions are managed by administrators only. Contact the admin to set up proper access levels.
+              You can assign multiple roles to a single staff member. Each role provides different access levels and permissions.
             </span>
 
             <div className=''>
@@ -222,10 +288,11 @@ export default function SignUpPage() {
               ) : 'Create Staff Account'}
             </Button>
           </form>
-          <div className='flex gap-2 text-sm mt-5'>
+          {/*           <div className='flex gap-2 text-sm mt-5'>
             <span>Already have a staff account?</span>
             <Link to='/staff-sign-in' className='text-blue-500'>Sign In</Link>
           </div>
+ */}
           {
             errorMessage && (
               <Alert className='my-5' color='failure'>

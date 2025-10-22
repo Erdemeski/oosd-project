@@ -7,6 +7,7 @@ import FooterBanner from '../components/FooterBanner';
 import AdvCardSkeleton from '../components/AdvCardSkeleton';
 import { motion } from 'framer-motion';
 import custService from '../assets/home_page/customer_services.png'
+import { FaWhatsapp } from 'react-icons/fa';
 
 const stats = [
   { id: 1, name: 'Years of creative excellence', value: '5', suffix: ' years', prefix: 'for' },
@@ -44,26 +45,23 @@ export default function HomePage() {
   const [recentAdvs, setRecentAdvs] = useState([])
   const [loading, setLoading] = useState(true);
 
-  const [img1Loaded, setImg1Loaded] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [img2Loaded, setImg2Loaded] = useState(false);
-
-  useEffect(() => {
-    try {
-      const fetchRecentAdvs = async () => {
-        const res = await fetch(`/api/advertisement/getadvertisements?limit=3`);
-        const data = await res.json();
-        if (res.ok) {
-          setLoading(false);
-          setRecentAdvs(data.advertisements);
-        }
-      };
-      fetchRecentAdvs();
-    } catch (error) {
-      setLoading(true);
-      console.log(error.message);
-    }
-  }, []);
+  /*   useEffect(() => {
+      try {
+        const fetchRecentAdvs = async () => {
+          const res = await fetch(``);
+          const data = await res.json();
+          if (res.ok) {
+            setLoading(false);
+            setRecentAdvs(data.advertisements);
+          }
+        };
+        fetchRecentAdvs();
+      } catch (error) {
+        setLoading(true);
+        console.log(error.message);
+      }
+    }, []);
+   */
 
   return (
     <div>
@@ -83,7 +81,7 @@ export default function HomePage() {
           </div>
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 top-0 -z-50 transform-gpu overflow-hidden blur-3xl sm:-top-0 translate-y-[1000px] lg:translate-x-[250px] rotate-180"
+            className="absolute inset-x-0 top-0 -z-50 transform-gpu overflow-hidden blur-3xl sm:-top-0 translate-y-[1000px] lg:translate-x-[-500px] rotate-180"
           >
             <div
               style={{
@@ -102,11 +100,16 @@ export default function HomePage() {
               <p className="mt-8 text-pretty text-lg font-medium text-gray-500 dark:text-gray-400 sm:text-xl/8">
                 Transform your brand with innovative <br /> advertising strategies that captivate and convert! <span className='text-2xl'>🚀</span>
               </p>
-              <div className="mt-10 flex items-center justify-center gap-x-6">
+              <div className="mt-10 flex flex-row sm:flex-col items-center justify-center gap-4">
                 <Link to='/public-menu'>
                   <button className="px-6 py-3 text-lg font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-md hover:scale-105 transition-transform">
                     View Our Portfolio
                   </button>
+                </Link>
+                <Link to='/about'>
+                  <span className="px-6 py-3 mr-2 text-md font-semibold text-black dark:text-white hover:font-bold transition-all duration-300">
+                    → Contact Us
+                  </span>
                 </Link>
               </div>
             </div>
@@ -121,24 +124,17 @@ export default function HomePage() {
                 clipPath:
                   'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
               }}
-              className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff9a8b] to-[#ff6a88] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem] animate-[pulse_7s_ease-in-out_infinite]"
+              className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-[1000px] bg-gradient-to-tr from-[#ff9a8b] to-[#ff6a88] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem] animate-[pulse_7s_ease-in-out_infinite]"
             />
           </div>
         </div>
 
-        <div className='flex-1 m-auto'>
+        {/*         <div className='flex-1 m-auto'>
           <div className='flex flex-row gap-3 px-3 sm:px-10 md:px-20 lg:pr-16 lg:pl-10 xl:pr-24 2xl:pr-44 md:flex-row items-center justify-center transition-all duration-500'>
-            <div className='hero__box relative w-fit h-fit'>
-              <img
-                src={custService}
-                alt=""
-                onLoad={() => setImg2Loaded(true)}
-                className={`transition-opacity duration-700 ${img2Loaded ? 'opacity-100' : 'opacity-0'}`}
-              />
-            </div>
+
           </div>
         </div>
-      </section>
+ */}      </section>
 
       <motion.section
         initial={{ opacity: 0, y: 100 }}

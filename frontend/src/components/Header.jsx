@@ -155,7 +155,7 @@ export default function Header() {
         <div className={`sticky top-0 z-[9998] transition-all duration-300 ${isScrolled ? 'backdrop-blur-3xl bg-white/5 dark:bg-[rgb(22,26,29)]/5 shadow-md' : ''} ${path.startsWith('/qr-order') ? 'hidden' : ''}`}>
             <Navbar className={`transition-all duration-300 ${isScrolled ? 'bg-white/70 dark:bg-[rgb(22,26,29)]/70 dark:shadow-2xl' : 'dark:bg-[rgb(22,26,29)]'}`}>
                 <Link to="/" className='self-center whitespace-nowrap text-sm sm:text-xl font-semibold dark:text-white focus:outline-none focus:ring-0' onClick={() => { setSearchTerm(''); setIsOpen(false); }}>
-                    <span className='ml-2 text-2xl font-semibold'>Creative <span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Agency</span></span>
+                    <span className='ml-2 text-3xl font-semibold'><span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Agate</span> Ltd.</span>
                 </Link>
                 <div className='flex gap-1 md:order-2'>
 
@@ -196,13 +196,13 @@ export default function Header() {
                                     <Badge color='failure' size='xs' className='cursor-default'>Admin User</Badge>
                                 ) : (
                                     currentUser.isManager ? (
-                                        <Badge color='warning' size='xs' className='cursor-default'>Manager User</Badge>
+                                        <Badge color='success' size='xs' className='cursor-default'>Manager User</Badge>
                                     ) : (
-                                        currentUser.isWaiter ? (
-                                            <Badge color='success' size='xs' className='cursor-default'>Waiter User</Badge>
+                                        currentUser.isAccountant ? (
+                                            <Badge color='warning' size='xs' className='cursor-default'>Accountant User</Badge>
                                         ) : (
-                                            currentUser.isReception ? (
-                                                <Badge color='danger' size='xs' className='cursor-default'>Reception User</Badge>
+                                            currentUser.isCreativeStaff ? (
+                                                <Badge color='blue' size='xs' className='cursor-default'>Creative Staff User</Badge>
                                             ) : (
                                                 <Badge color='gray' size='xs' className='cursor-default'>Undefined</Badge>
                                             )
@@ -232,14 +232,14 @@ export default function Header() {
                             Home
                         </Link>
                     </Navbar.Link>
-                    <Navbar.Link active={path === "/public-menu"} as={'div'}>
-                        <Link to='/public-menu'>
+                    <Navbar.Link active={path === "/portfolio"} as={'div'}>
+                        <Link to='/portfolio'>
                             Portfolio
                         </Link>
                     </Navbar.Link>
                     <Navbar.Link active={path === "/about"} as={'div'}>
                         <Link to='/about'>
-                            About Us
+                            Contact Us
                         </Link>
                     </Navbar.Link>
                     <div className='flex justify-center sm:hidden'>

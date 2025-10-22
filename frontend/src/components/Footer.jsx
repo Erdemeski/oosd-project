@@ -10,7 +10,7 @@ export default function FooterComponent() {
         <div className='grid w-full justify-between sm:flex md:grid-cols-1'>
           <div className='mb-3'>
             <Link to="/" className='self-center whitespace-nowrap text-sm sm:text-xl font-semibold dark:text-white focus:outline-none focus:ring-0'>
-              <span className='ml-0 text-3xl font-semibold'>Creative <span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Agency</span></span>
+              <span className='ml-0 text-2xl font-semibold'><span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Agate</span> Ltd.</span>
             </Link>
           </div>
           <div className='grid grid-cols-2 gap-8 mt-4 sm:grid-cols-3 sm:gap-6 ml-10'>
@@ -35,10 +35,10 @@ export default function FooterComponent() {
                 <Footer.Link href='/about' rel='noopener nopreferrer' >
                   About Us
                 </Footer.Link>
-                <Footer.Link href='/public-menu' rel='noopener nopreferrer'>
+                <Footer.Link href='/portfolio' rel='noopener nopreferrer'>
                   Portfolio
                 </Footer.Link>
-                <Footer.Link href='#' rel='noopener nopreferrer'>
+                <Footer.Link href='/about' rel='noopener nopreferrer'>
                   Contact Us
                 </Footer.Link>
 

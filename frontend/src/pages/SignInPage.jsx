@@ -99,7 +99,7 @@ export default function SignInPage() {
       <div className='flex p-3 max-w-3xl mx-auto flex-col md:flex-row md:items-center gap-5'>
         <div className='flex-1'>
           <Link to="/" className='self-center whitespace-nowrap text-sm sm:text-xl font-semibold dark:text-white focus:outline-none focus:ring-0'>
-            <span className='ml-0 text-5xl font-semibold'>Erdem's <span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Cafe</span></span>
+            <span className='ml-0 text-5xl font-semibold'><span className='bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text'>Agate</span> Ltd.</span>
           </Link>
           <p className='text-sm mt-5'>
             To access the staff portal, please sign in with your staff ID and password.

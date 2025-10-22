@@ -25,19 +25,19 @@ const userSchema = new mongoose.Schema({
     isAdmin: {
         type: Boolean,
         default: false,
-    }, // Can access all pages (Can manipulate all pages)
-    isWaiter: {
+    },
+    isCreativeStaff: {
         type: Boolean,
         default: false,
-    }, // Can access waiter pages (Can reach orders, tables, etc.)
+    },
+    isAccountant: {
+        type: Boolean,
+        default: false,
+    },
     isManager: {
         type: Boolean,
         default: false,
-    }, // Can access manager pages (Can manage cafe information, staffs, etc.)
-    isReception: {
-        type: Boolean,
-        default: false,
-    }, // Can access reception pages (Can manage reservations, etc.)
+    },
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

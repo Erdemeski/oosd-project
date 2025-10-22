@@ -4,7 +4,11 @@ import { errorHandler } from "../utils/error.js";
 import jwt from "jsonwebtoken";
 
 export const signup = async (req, res, next) => {
-    const { staffId, firstName, lastName, password } = req.body;
+    const { staffId, firstName, lastName, password, isAdmin, isManager, isAccountant, isCreativeStaff } = req.body;
+
+    if (req.user.isAdmin !== true) {
+        return next(errorHandler(403, 'You are not allowed to create a staff account'));
+    }
 
     if (!staffId || !firstName || !lastName || !password ||
         staffId === '' || firstName === '' || lastName === '' || password === '') {
@@ -35,12 +39,20 @@ export const signup = async (req, res, next) => {
         staffId,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        password: hashedPassword
+        password: hashedPassword,
+        isAdmin: isAdmin || false,
+        isManager: isManager || false,
+        isAccountant: isAccountant || false,
+        isCreativeStaff: isCreativeStaff || false
     });
 
     try {
         await newUser.save();
-        res.status(201).json({ message: 'Staff account created successfully' });
+        const { password: pass, ...rest } = newUser._doc;
+        res.status(201).json({
+            message: 'Staff account created successfully',
+            user: rest
+        });
     } catch (error) {
         if (error.code === 11000) {
             return next(errorHandler(400, 'Staff ID already exists'));
@@ -72,9 +84,9 @@ export const signin = async (req, res, next) => {
                 id: validUser._id,
                 staffId: validUser.staffId,
                 isAdmin: validUser.isAdmin,
-                isWaiter: validUser.isWaiter,
                 isManager: validUser.isManager,
-                isReception: validUser.isReception
+                isAccountant: validUser.isAccountant,
+                isCreativeStaff: validUser.isCreativeStaff
             },
             process.env.JWT_SECRET,
             { expiresIn: '10m' } // 10 minutes
@@ -121,13 +133,13 @@ function replaceTurkishChars(str) {
 export const refreshSession = async (req, res, next) => {
     try {
         // req.user is set by verifyToken middleware (decoded JWT)
-        const { id, staffId, isAdmin, isWaiter, isManager, isReception } = req.user || {};
+        const { id, staffId, isAdmin, isManager, isAccountant, isCreativeStaff } = req.user || {};
         if (!id) {
             return next(errorHandler(401, 'Unauthorized - Please sign in'));
         }
 
         const token = jwt.sign(
-            { id, staffId, isAdmin, isWaiter, isManager, isReception },
+            { id, staffId, isAdmin, isManager, isAccountant, isCreativeStaff },
             process.env.JWT_SECRET,
             { expiresIn: '10m' }
         );
