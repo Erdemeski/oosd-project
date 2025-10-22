@@ -1,0 +1,839 @@
+openapi: 3.0.3
+info:
+  title: OOSD Project API
+  version: 1.0.0
+  description: Project management API for campaign, client, and user management
+servers:
+  - url: http://localhost:3000
+    description: Local Development Server
+  - url: https://api.example.com
+    description: Production Server
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Clients
+    description: Client management endpoints
+  - name: Campaigns
+    description: Campaign management endpoints
+  - name: Contacts
+    description: Contact/Inquiry endpoints
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ===== Authentication Schemas =====
+    SignupRequest:
+      type: object
+      required: [staffId, firstName, lastName, password]
+      properties:
+        staffId:
+          type: string
+          example: "STF001"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "SecurePass123!"
+
+    SigninRequest:
+      type: object
+      required: [staffId, password]
+      properties:
+        staffId:
+          type: string
+          example: "STF001"
+        password:
+          type: string
+          format: password
+          example: "SecurePass123!"
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+            user:
+              $ref: '#/components/schemas/User'
+
+    # ===== User Schemas =====
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        staffId:
+          type: string
+          example: "STF001"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        profilePicture:
+          type: string
+          format: uri
+        isAdmin:
+          type: boolean
+          default: false
+        isCreativeStaff:
+          type: boolean
+          default: false
+        isAccountant:
+          type: boolean
+          default: false
+        isManager:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdatePermissionsRequest:
+      type: object
+      properties:
+        isAdmin:
+          type: boolean
+        isCreativeStaff:
+          type: boolean
+        isAccountant:
+          type: boolean
+        isManager:
+          type: boolean
+
+    UpdateUserInfoRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        password:
+          type: string
+          format: password
+
+    # ===== Client Schemas =====
+    Client:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+          example: "John"
+        surname:
+          type: string
+          example: "Smith"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        companyName:
+          type: string
+          example: "Tech Company Ltd"
+        address:
+          type: string
+          example: "123 Main St, City"
+        contactPersonDetails:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ClientCreateRequest:
+      type: object
+      required: [name, surname, email]
+      properties:
+        name:
+          type: string
+          example: "John"
+        surname:
+          type: string
+          example: "Smith"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        companyName:
+          type: string
+          example: "Tech Company Ltd"
+        address:
+          type: string
+          example: "123 Main St, City"
+        contactPersonDetails:
+          type: string
+
+    # ===== Campaign Schemas =====
+    Campaign:
+      type: object
+      properties:
+        _id:
+          type: string
+        clientId:
+          type: string
+        title:
+          type: string
+          example: "Summer Marketing Campaign"
+        plannedStartDate:
+          type: string
+          format: date-time
+        plannedEndDate:
+          type: string
+          format: date-time
+        estimatedCost:
+          type: number
+          example: 5000
+        budget:
+          type: number
+          example: 5500
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CampaignCreateRequest:
+      type: object
+      required: [clientId, title, estimatedCost, budget]
+      properties:
+        clientId:
+          type: string
+        title:
+          type: string
+          example: "Summer Marketing Campaign"
+        plannedStartDate:
+          type: string
+          format: date-time
+        plannedEndDate:
+          type: string
+          format: date-time
+        estimatedCost:
+          type: number
+          minimum: 0
+          example: 5000
+        budget:
+          type: number
+          minimum: 0
+          example: 5500
+
+    # ===== Contact Schemas =====
+    Contact:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+          example: "Jane"
+        surname:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+        phoneNumber:
+          type: string
+          example: "+1234567890"
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ContactCreateRequest:
+      type: object
+      required: [name, surname, email, phoneNumber, message]
+      properties:
+        name:
+          type: string
+          example: "Jane"
+        surname:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "jane@example.com"
+        phoneNumber:
+          type: string
+          example: "+1234567890"
+        message:
+          type: string
+          example: "I would like to know more about your services"
+
+    # ===== Response Schemas =====
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Error message"
+
+paths:
+  # ===== AUTHENTICATION ENDPOINTS =====
+  /api/auth/signup:
+    post:
+      tags: [Authentication]
+      summary: Create a new user (Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Unauthorized - Admin privileges required
+
+  /api/auth/signin:
+    post:
+      tags: [Authentication]
+      summary: Sign in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+      responses:
+        '200':
+          description: Sign in successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh user session
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Unauthorized
+
+  # ===== USER ENDPOINTS =====
+  /api/user/test:
+    get:
+      tags: [Users]
+      summary: Test endpoint
+      responses:
+        '200':
+          description: Test successful
+
+  /api/user/getusers:
+    get:
+      tags: [Users]
+      summary: Get all users (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin privileges required
+
+  /api/user/getUsersPP:
+    get:
+      tags: [Users]
+      summary: Get users with profile pictures (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users with profile pictures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: Forbidden - Admin privileges required
+
+  /api/user/{userId}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+
+  /api/user/staff/{staffId}:
+    get:
+      tags: [Users]
+      summary: Get user by Staff ID
+      parameters:
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+
+  /api/user/update-permissions/{userId}:
+    put:
+      tags: [Users]
+      summary: Update user permissions (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePermissionsRequest'
+      responses:
+        '200':
+          description: Permissions updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Forbidden - Admin privileges required
+        '404':
+          description: User not found
+
+  /api/user/update/{userId}:
+    put:
+      tags: [Users]
+      summary: Update user information (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserInfoRequest'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Forbidden - Admin privileges required
+        '404':
+          description: User not found
+
+  /api/user/delete/{userId}:
+    delete:
+      tags: [Users]
+      summary: Delete user (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Forbidden - Admin privileges required
+        '404':
+          description: User not found
+
+  /api/user/signout:
+    post:
+      tags: [Users]
+      summary: Sign out user
+      responses:
+        '200':
+          description: Sign out successful
+
+  # ===== CLIENT ENDPOINTS =====
+  /api/clients/get-clients:
+    get:
+      tags: [Clients]
+      summary: Get all clients
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Client'
+        '401':
+          description: Unauthorized
+
+  /api/clients/create-client:
+    post:
+      tags: [Clients]
+      summary: Create a new client (Admin or Manager only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateRequest'
+      responses:
+        '201':
+          description: Client created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Client'
+        '403':
+          description: Forbidden - Admin or Manager privileges required
+
+  /api/clients/update-client/{id}:
+    put:
+      tags: [Clients]
+      summary: Update client (Admin or Manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateRequest'
+      responses:
+        '200':
+          description: Client updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Client'
+        '403':
+          description: Forbidden - Admin or Manager privileges required
+        '404':
+          description: Client not found
+
+  /api/clients/delete-client/{id}:
+    delete:
+      tags: [Clients]
+      summary: Delete client (Admin or Manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Client deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Forbidden - Admin or Manager privileges required
+        '404':
+          description: Client not found
+
+  # ===== CAMPAIGN ENDPOINTS =====
+  /api/campaigns/get-campaigns:
+    get:
+      tags: [Campaigns]
+      summary: Get all campaigns
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of campaigns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Campaign'
+        '401':
+          description: Unauthorized
+
+  /api/campaigns/create-campaign:
+    post:
+      tags: [Campaigns]
+      summary: Create a new campaign (Admin or Manager only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreateRequest'
+      responses:
+        '201':
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Campaign'
+        '403':
+          description: Forbidden - Admin or Manager privileges required
+        '404':
+          description: Client not found
+
+  /api/campaigns/update-campaign/{id}:
+    put:
+      tags: [Campaigns]
+      summary: Update campaign (Admin or Manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreateRequest'
+      responses:
+        '200':
+          description: Campaign updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Campaign'
+        '403':
+          description: Forbidden - Admin or Manager privileges required
+        '404':
+          description: Campaign or Client not found
+
+  /api/campaigns/delete-campaign/{id}:
+    delete:
+      tags: [Campaigns]
+      summary: Delete campaign (Admin or Manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Campaign deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '403':
+          description: Forbidden - Admin or Manager privileges required
+        '404':
+          description: Campaign not found
+
+  # ===== CONTACT ENDPOINTS =====
+  /api/contact/createContact:
+    post:
+      tags: [Contacts]
+      summary: Create a contact inquiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreateRequest'
+      responses:
+        '201':
+          description: Contact created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Contact'
+        '400':
+          description: Invalid request
+
+  /api/contact/getContacts:
+    get:
+      tags: [Contacts]
+      summary: Get all contacts (Admin or Manager only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Contact'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin or Manager privileges required

@@ -9,6 +9,15 @@ import campaignRoutes from './routes/campaign.routes.js';
 import contactRoutes from './routes/contact.route.js';
 import cookieParser from "cookie-parser";
 
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const swaggerPath = path.join(__dirname, "openapi.yaml");
+const swaggerSpec = YAML.load(swaggerPath);
 
 mongoose
     .connect(process.env.MONGO)
@@ -25,8 +34,12 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cookieParser());
 
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
+//app.get("/docs-json", (_, res) => res.json(swaggerSpec));
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+    console.log(`Swagger UI: http://localhost:${port}/docs`);
+    console.log(`OpenAPI JSON: http://localhost:${port}/docs-json`);
 });
 
 
