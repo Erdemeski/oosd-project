@@ -87,3 +87,27 @@ export const verifyStaff = (req, res, next) => {
     }
     next();
 };
+
+// New middleware to verify accountant access
+export const verifyAccountant = (req, res, next) => {
+    if (!req.user.isAccountant && !req.user.isAdmin) {
+        return next(errorHandler(403, 'Access denied - Accountant privileges required'));
+    }
+    next();
+};
+
+// New middleware to verify creative staff access
+export const verifyCreativeStaff = (req, res, next) => {
+    if (!req.user.isCreativeStaff && !req.user.isAdmin) {
+        return next(errorHandler(403, 'Access denied - Creative Staff privileges required'));
+    }
+    next();
+};
+
+// New middleware to verify any authenticated staff (Manager, CreativeStaff, Accountant, Admin)
+export const verifyAnyStaff = (req, res, next) => {
+    if (!req.user.isManager && !req.user.isCreativeStaff && !req.user.isAccountant && !req.user.isAdmin) {
+        return next(errorHandler(403, 'Access denied - Staff privileges required'));
+    }
+    next();
+};

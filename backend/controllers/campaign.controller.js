@@ -1,5 +1,6 @@
 import Campaign from '../models/campaign.model.js';
 import Client from '../models/client.model.js';
+import Advert from '../models/advert.model.js';
 import { errorHandler } from '../utils/error.js';
 
 export const createCampaign = async (req, res, next) => {
@@ -118,6 +119,68 @@ export const deleteCampaign = async (req, res, next) => {
         });
 
     }catch(error){
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+// Requirement 7: Budget and Status Check for Accountants
+export const checkCampaignBudgetAndStatus = async (req, res, next) => {
+    try {
+        const { campaignId } = req.params;
+
+        // Retrieve the campaign
+        const campaign = await Campaign.findById(campaignId);
+        
+        if (!campaign) {
+            return res.status(404).json({
+                success: false,
+                error: 'Campaign not found'
+            });
+        }
+
+        // Find all adverts linked to this campaign
+        const adverts = await Advert.find({ campaignId: campaignId });
+
+        // Calculate total advert costs
+        // Priority: actualCost if available, otherwise estimatedCost
+        const totalAdvertCost = adverts.reduce((total, advert) => {
+            const cost = advert.actualCost > 0 ? advert.actualCost : advert.estimatedCost;
+            return total + cost;
+        }, 0);
+
+        // Determine budget status
+        let budgetStatus;
+        const budgetUsagePercentage = (totalAdvertCost / campaign.budget) * 100;
+
+        if (totalAdvertCost <= campaign.budget * 0.8) {
+            budgetStatus = 'Within Budget';
+        } else if (totalAdvertCost <= campaign.budget) {
+            budgetStatus = 'Warning - Near Budget Limit';
+        } else {
+            budgetStatus = 'Over Budget';
+        }
+
+        // Return comprehensive budget information
+        res.status(200).json({
+            success: true,
+            data: {
+                campaignId: campaign._id,
+                campaignTitle: campaign.title,
+                campaignBudget: campaign.budget,
+                totalAdvertCost: totalAdvertCost,
+                remainingBudget: campaign.budget - totalAdvertCost,
+                budgetUsagePercentage: budgetUsagePercentage.toFixed(2),
+                budgetStatus: budgetStatus,
+                numberOfAdverts: adverts.length,
+                plannedStartDate: campaign.plannedStartDate,
+                plannedEndDate: campaign.plannedEndDate
+            }
+        });
+
+    } catch (error) {
         res.status(500).json({
             success: false,
             error: error.message
