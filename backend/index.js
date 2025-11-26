@@ -8,6 +8,7 @@ import clientRoute from './routes/client.route.js';
 import campaignRoutes from './routes/campaign.routes.js';
 import contactRoutes from './routes/contact.route.js';
 import cookieParser from "cookie-parser";
+import advertRoutes from "./routes/advert.routes.js"
 
 
 mongoose
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoute);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/adverts',advertRoutes)
 
 
 app.use((err, req, res, next) => {
