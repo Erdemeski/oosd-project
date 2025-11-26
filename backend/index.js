@@ -7,6 +7,8 @@ import authRoutes from './routes/auth.route.js';
 import clientRoute from './routes/client.route.js';
 import campaignRoutes from './routes/campaign.routes.js';
 import contactRoutes from './routes/contact.route.js';
+import conceptNoteRoutes from './routes/conceptNote.routes.js';
+import advertRoutes from './routes/advert.routes.js';
 import cookieParser from "cookie-parser";
 import advertRoutes from "./routes/advert.routes.js"
 
@@ -30,13 +32,13 @@ app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
-
 app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoute);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/contact', contactRoutes);
-app.use('/api/adverts',advertRoutes)
+app.use('/api/concept-notes', conceptNoteRoutes);
+app.use('/api/adverts', advertRoutes);
 
 
 app.use((err, req, res, next) => {
