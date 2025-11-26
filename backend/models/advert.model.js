@@ -15,9 +15,16 @@ const AdvertSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    // Feat dalından gelen genel platform bilgisi (Örn: TV, Sosyal Medya)
     platform: {
         type: String,
         trim: true
+    },
+    status: {
+        type: String,
+        // Main ve Feat enum değerlerinin birleşimi (Standardize edildi: Title Case)
+        enum: ['Planned', 'InProduction', 'Completed', 'OnHold', 'Cancelled'],
+        default: 'Planned'
     },
     estimatedCost: {
         type: Number,
@@ -25,19 +32,35 @@ const AdvertSchema = new mongoose.Schema({
         min: 0,
         default: 0
     },
+    // Feat dalından gelen "Gerçekleşen Maliyet" alanı
     actualCost: {
         type: Number,
         min: 0,
         default: 0
     },
-    status: {
-        type: String,
-        enum: ['planned', 'in-progress', 'completed', 'cancelled'],
-        default: 'planned'
-    }
+    // Main dalından gelen detaylı Yayın Planı yapısı (Madde 11)
+    schedules: [{
+        channel: { 
+            type: String, 
+            required: true,
+            trim: true
+        },
+        startDate: { 
+            type: Date, 
+            required: true 
+        },
+        endDate: { 
+            type: Date, 
+            required: true 
+        },
+        cost: { 
+            type: Number,
+            min: 0,
+            default: 0 
+        }
+    }]
 }, {
-    timestamps: true
+    timestamps: true // createdDate yerine Mongoose'un otomatik zaman damgaları
 });
 
 export default mongoose.model('Advert', AdvertSchema);
-

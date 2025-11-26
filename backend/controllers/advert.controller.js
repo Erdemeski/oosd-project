@@ -10,18 +10,23 @@ export const createAdvert = async (req, res, next) => {
     }
 
     try {
-        const { campaignId } = req.body;
+        // Body'den schedules da gelebilir, onu da alıyoruz
+        const { campaignId, title, description, platform, estimatedCost, schedules } = req.body;
 
         // Verify campaign exists
         const campaign = await Campaign.findById(campaignId);
         if (!campaign) {
-            return res.status(404).json({
-                success: false,
-                error: 'Campaign not found'
-            });
+            return next(errorHandler(404, 'Campaign not found'));
         }
 
-        const newAdvert = await Advert.create(req.body);
+        const newAdvert = await Advert.create({
+            campaignId,
+            title,
+            description,
+            platform,
+            estimatedCost,
+            schedules: schedules || [] // Eğer schedule gelmezse boş dizi ata
+        });
 
         res.status(201).json({
             success: true,
@@ -30,10 +35,7 @@ export const createAdvert = async (req, res, next) => {
         });
 
     } catch (error) {
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
 
@@ -51,10 +53,7 @@ export const getAllAdverts = async (req, res, next) => {
         });
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
 
@@ -63,13 +62,9 @@ export const getAdvertsByCampaign = async (req, res, next) => {
     try {
         const { campaignId } = req.params;
 
-        // Verify campaign exists
         const campaign = await Campaign.findById(campaignId);
         if (!campaign) {
-            return res.status(404).json({
-                success: false,
-                error: 'Campaign not found'
-            });
+            return next(errorHandler(404, 'Campaign not found'));
         }
 
         const adverts = await Advert.find({ campaignId })
@@ -83,10 +78,7 @@ export const getAdvertsByCampaign = async (req, res, next) => {
         });
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
 
@@ -99,10 +91,7 @@ export const getAdvertById = async (req, res, next) => {
             .populate('campaignId', 'title budget');
 
         if (!advert) {
-            return res.status(404).json({
-                success: false,
-                error: 'Advertisement not found'
-            });
+            return next(errorHandler(404, 'Advertisement not found'));
         }
 
         res.status(200).json({
@@ -111,16 +100,12 @@ export const getAdvertById = async (req, res, next) => {
         });
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
 
-// Update advert
+// Update advert (Genel güncelleme)
 export const updateAdvert = async (req, res, next) => {
-    // Only Admin or Manager can update adverts
     if (req.user.isAdmin !== true && req.user.isManager !== true) {
         return next(errorHandler(403, 'Access denied - Admin or Manager privileges required'));
     }
@@ -128,22 +113,11 @@ export const updateAdvert = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        const advert = await Advert.findById(id);
-        if (!advert) {
-            return res.status(404).json({
-                success: false,
-                error: 'Advertisement not found'
-            });
-        }
-
-        // If campaignId is being updated, verify the campaign exists
+        // Eğer campaignId değişiyorsa, yeni kampanya var mı kontrol et
         if (req.body.campaignId) {
             const campaign = await Campaign.findById(req.body.campaignId);
             if (!campaign) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Campaign not found'
-                });
+                return next(errorHandler(404, 'Campaign not found'));
             }
         }
 
@@ -153,6 +127,10 @@ export const updateAdvert = async (req, res, next) => {
             { new: true, runValidators: true }
         ).populate('campaignId', 'title budget');
 
+        if (!updatedAdvert) {
+            return next(errorHandler(404, 'Advertisement not found'));
+        }
+
         res.status(200).json({
             success: true,
             message: 'Advertisement updated successfully',
@@ -160,16 +138,12 @@ export const updateAdvert = async (req, res, next) => {
         });
 
     } catch (error) {
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
 
 // Delete advert
 export const deleteAdvert = async (req, res, next) => {
-    // Only Admin or Manager can delete adverts
     if (req.user.isAdmin !== true && req.user.isManager !== true) {
         return next(errorHandler(403, 'Access denied - Admin or Manager privileges required'));
     }
@@ -177,15 +151,11 @@ export const deleteAdvert = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        const advert = await Advert.findById(id);
-        if (!advert) {
-            return res.status(404).json({
-                success: false,
-                error: 'Advertisement not found'
-            });
-        }
+        const deletedAdvert = await Advert.findByIdAndDelete(id);
 
-        await Advert.findByIdAndDelete(id);
+        if (!deletedAdvert) {
+            return next(errorHandler(404, 'Advertisement not found'));
+        }
 
         res.status(200).json({
             success: true,
@@ -193,14 +163,11 @@ export const deleteAdvert = async (req, res, next) => {
         });
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
 
-// Update actual cost (Accountant can also do this)
+// Update actual cost (Requirements 8/9 - Muhasebe/Yönetici)
 export const updateActualCost = async (req, res, next) => {
     // Accountant, Admin, or Manager can update actual costs
     if (!req.user.isAccountant && !req.user.isAdmin && !req.user.isManager) {
@@ -212,37 +179,67 @@ export const updateActualCost = async (req, res, next) => {
         const { actualCost } = req.body;
 
         if (actualCost === undefined || actualCost < 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Valid actual cost is required'
-            });
+            return next(errorHandler(400, 'Valid actual cost is required'));
         }
 
-        const advert = await Advert.findById(id);
+        const advert = await Advert.findByIdAndUpdate(
+            id,
+            { actualCost: actualCost },
+            { new: true, runValidators: true }
+        ).populate('campaignId', 'title budget');
+
         if (!advert) {
-            return res.status(404).json({
-                success: false,
-                error: 'Advertisement not found'
-            });
+            return next(errorHandler(404, 'Advertisement not found'));
         }
-
-        advert.actualCost = actualCost;
-        await advert.save();
-
-        const updatedAdvert = await Advert.findById(id)
-            .populate('campaignId', 'title budget');
 
         res.status(200).json({
             success: true,
             message: 'Actual cost updated successfully',
+            data: advert
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Add Schedule to Advert (Madde 11 - Main dalındaki özellik)
+export const addScheduleToAdvert = async (req, res, next) => {
+    // Sadece Admin veya Manager yayın planı ekleyebilir
+    if (req.user.isAdmin !== true && req.user.isManager !== true) {
+        return next(errorHandler(403, 'Access denied'));
+    }
+
+    try {
+        const { id } = req.params;
+        const { channel, startDate, endDate, cost } = req.body;
+
+        const advert = await Advert.findById(id);
+        if (!advert) {
+            return next(errorHandler(404, 'Advertisement not found'));
+        }
+
+        // Yeni schedule objesi oluştur ve array'e push et
+        advert.schedules.push({ 
+            channel, 
+            startDate, 
+            endDate, 
+            cost: cost || 0 
+        });
+        
+        // Eğer schedule'ın bir maliyeti varsa ve estimatedCost 0 ise,
+        // otomatik olarak estimatedCost'u da güncelleyebiliriz (opsiyonel mantık)
+        // advert.estimatedCost += (cost || 0); 
+
+        const updatedAdvert = await advert.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Schedule added successfully',
             data: updatedAdvert
         });
 
     } catch (error) {
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
-
