@@ -64,6 +64,11 @@ export default function DashSidebar({ tab }) {
                             </Link>
                         )}
                         {currentUser && currentUser.isManager && (
+                            <Link to='/manager-dashboard?tab=operations'>
+                                <Sidebar.Item active={tab === 'operations'} icon={HiDocumentText} as='div'>Operations</Sidebar.Item>
+                            </Link>
+                        )}
+                        {currentUser && currentUser.isManager && (
                             <Link to='/manager-dashboard?tab=users'>
                                 {!currentUser.isAdmin ? (
                                     <div className='bg-red-100 rounded-lg border border-red-200'>

@@ -9,6 +9,7 @@ import ManagerDashClients from '../components/ManagerDash/DashClients';
 import ManagerDashCampaigns from '../components/ManagerDash/DashCampaigns';
 import NotFound from './NotFound';
 import DashClientFeedbacks from '../components/ManagerDash/DashClientFeedbacks';
+import DashOperations from '../components/ManagerDash/DashOperations';
 
 export default function ManagerDashboard() {
 
@@ -30,6 +31,7 @@ export default function ManagerDashboard() {
 
     const renderTabContent = () => {
         if (currentUser.isManager && tab === 'dashboard') return <ManagerDashboardMain />;
+        if (currentUser.isManager && tab === 'operations') return <DashOperations />;
         if (currentUser.isManager && tab === 'users') return <ManagerDashUsers />;
 
         if (currentUser.isManager && tab === 'clients') return <ManagerDashClients />;

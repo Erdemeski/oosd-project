@@ -21,7 +21,7 @@ router.post('/', verifyToken, verifyAdminOrManager, createAdvert);
 router.put('/:id', verifyToken, verifyAdminOrManager, updateAdvert);
 router.delete('/:id', verifyToken, verifyAdminOrManager, deleteAdvert);
 router.patch('/:id/actual-cost', verifyToken, updateActualCost);
-router.post('/:id/schedule', addScheduleToAdvert); // Madde 11
+router.post('/:id/schedule', verifyToken, verifyAdminOrManager, addScheduleToAdvert); // Madde 11
 
 // İŞTE HATAYI ÇÖZEN KISIM BURASI:
 export default router;

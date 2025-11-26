@@ -56,30 +56,6 @@ export const verifyAdminOrManager = (req, res, next) => {
     next();
 };
 
-// New middleware to verify waiter access
-export const verifyWaiter = (req, res, next) => {
-    if (!req.user.isWaiter && !req.user.isAdmin) {
-        return next(errorHandler(403, 'Access denied - Waiter privileges required'));
-    }
-    next();
-};
-
-// New middleware to verify manager access
-export const verifyManager = (req, res, next) => {
-    if (!req.user.isManager && !req.user.isAdmin) {
-        return next(errorHandler(403, 'Access denied - Manager privileges required'));
-    }
-    next();
-};
-
-// New middleware to verify reception access
-export const verifyReception = (req, res, next) => {
-    if (!req.user.isReception && !req.user.isAdmin) {
-        return next(errorHandler(403, 'Access denied - Reception privileges required'));
-    }
-    next();
-};
-
 // New middleware to verify staff access (any role)
 export const verifyStaff = (req, res, next) => {
     if (!req.user.isAdmin && !req.user.isWaiter && !req.user.isManager && !req.user.isReception) {
@@ -92,6 +68,13 @@ export const verifyStaff = (req, res, next) => {
 export const verifyAccountant = (req, res, next) => {
     if (!req.user.isAccountant && !req.user.isAdmin) {
         return next(errorHandler(403, 'Access denied - Accountant privileges required'));
+    }
+    next();
+};
+
+export const verifyAccountantOrManager = (req, res, next) => {
+    if (!req.user.isAccountant && !req.user.isManager && !req.user.isAdmin) {
+        return next(errorHandler(403, 'Access denied - Accountant or Manager privileges required'));
     }
     next();
 };

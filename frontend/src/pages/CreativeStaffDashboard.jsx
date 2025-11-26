@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux';
 import DashSidebar from '../components/CreativeStaffDash/DashSidebar';
 import CreativeStaffDashboardMain from '../components/CreativeStaffDash/DashboardMain';
+import DashConceptNotes from '../components/CreativeStaffDash/DashConceptNotes';
 import NotFound from './NotFound';
 
 export default function CreativeStaffDashboard() {
@@ -25,6 +26,7 @@ export default function CreativeStaffDashboard() {
 
     const renderTabContent = () => {
         if (currentUser.isCreativeStaff && tab === 'dashboard') return <CreativeStaffDashboardMain />;
+        if (currentUser.isCreativeStaff && tab === 'concept-notes') return <DashConceptNotes />;
         return <NotFound />;
     }
 

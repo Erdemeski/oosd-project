@@ -10,7 +10,6 @@ import contactRoutes from './routes/contact.route.js';
 import conceptNoteRoutes from './routes/conceptNote.routes.js';
 import advertRoutes from './routes/advert.routes.js';
 import cookieParser from "cookie-parser";
-import advertRoutes from "./routes/advert.routes.js"
 
 
 mongoose

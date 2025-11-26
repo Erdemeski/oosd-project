@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux';
 import DashSidebar from '../components/AccountantDash/DashSidebar';
 import AccountantDashboardMain from '../components/AccountantDash/DashboardMain';
+import DashFinancials from '../components/AccountantDash/DashFinancials';
 import NotFound from './NotFound';
 
 export default function AccountantDashboard() {
@@ -25,6 +26,7 @@ export default function AccountantDashboard() {
 
     const renderTabContent = () => {
         if (currentUser.isAccountant && tab === 'dashboard') return <AccountantDashboardMain />;
+        if (currentUser.isAccountant && tab === 'financials') return <DashFinancials />;
         return <NotFound />;
     }
 

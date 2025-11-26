@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Modal, Sidebar } from 'flowbite-react'
-import { HiArrowSmLeft, HiArrowSmRight, HiChartPie } from 'react-icons/hi'
+import { HiArrowSmLeft, HiArrowSmRight, HiChartPie, HiLightBulb } from 'react-icons/hi'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signoutSuccess } from '../../redux/user/userSlice';
 import { useDispatch, useSelector } from "react-redux";
@@ -60,6 +60,11 @@ export default function DashSidebar({ tab }) {
                         {currentUser && currentUser.isCreativeStaff && (
                             <Link to='/creative-staff-dashboard?tab=dashboard'>
                                 <Sidebar.Item active={tab === 'dashboard' || !tab} icon={HiChartPie} as='div' label="Creative S." labelColor="blue">Dashboard</Sidebar.Item>
+                            </Link>
+                        )}
+                        {currentUser && currentUser.isCreativeStaff && (
+                            <Link to='/creative-staff-dashboard?tab=concept-notes'>
+                                <Sidebar.Item active={tab === 'concept-notes'} icon={HiLightBulb} as='div'>Concept Notes</Sidebar.Item>
                             </Link>
                         )}
                     </Sidebar.ItemGroup>

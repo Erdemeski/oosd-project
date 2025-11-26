@@ -62,6 +62,11 @@ export default function DashSidebar({ tab }) {
                                 <Sidebar.Item active={tab === 'dashboard' || !tab} icon={HiChartPie} as='div' label="Accountant" labelColor="yellow">Dashboard</Sidebar.Item>
                             </Link>
                         )}
+                        {currentUser && currentUser.isAccountant && (
+                            <Link to='/accountant-dashboard?tab=financials'>
+                                <Sidebar.Item active={tab === 'financials'} icon={HiDocumentText} as='div'>Financials</Sidebar.Item>
+                            </Link>
+                        )}
                     </Sidebar.ItemGroup>
                     
                     <Sidebar.ItemGroup className='flex flex-col gap-1'>

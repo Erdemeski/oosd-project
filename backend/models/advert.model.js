@@ -6,6 +6,11 @@ const AdvertSchema = new mongoose.Schema({
         ref: 'Campaign',
         required: true
     },
+    createdByStaffId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
     title: {
         type: String,
         required: true,

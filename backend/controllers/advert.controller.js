@@ -19,14 +19,17 @@ export const createAdvert = async (req, res, next) => {
             return next(errorHandler(404, 'Campaign not found'));
         }
 
-        const newAdvert = await Advert.create({
+        let newAdvert = await Advert.create({
             campaignId,
             title,
             description,
             platform,
             estimatedCost,
-            schedules: schedules || [] // Eğer schedule gelmezse boş dizi ata
+            schedules: schedules || [], // Eğer schedule gelmezse boş dizi ata
+            createdByStaffId: req.user.id
         });
+
+        newAdvert = await newAdvert.populate('campaignId', 'title budget').populate('createdByStaffId', 'firstName lastName staffId');
 
         res.status(201).json({
             success: true,
@@ -44,6 +47,7 @@ export const getAllAdverts = async (req, res, next) => {
     try {
         const adverts = await Advert.find()
             .populate('campaignId', 'title budget')
+            .populate('createdByStaffId', 'firstName lastName staffId')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -69,6 +73,7 @@ export const getAdvertsByCampaign = async (req, res, next) => {
 
         const adverts = await Advert.find({ campaignId })
             .populate('campaignId', 'title budget')
+            .populate('createdByStaffId', 'firstName lastName staffId')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -88,7 +93,8 @@ export const getAdvertById = async (req, res, next) => {
         const { id } = req.params;
 
         const advert = await Advert.findById(id)
-            .populate('campaignId', 'title budget');
+            .populate('campaignId', 'title budget')
+            .populate('createdByStaffId', 'firstName lastName staffId');
 
         if (!advert) {
             return next(errorHandler(404, 'Advertisement not found'));
@@ -125,7 +131,8 @@ export const updateAdvert = async (req, res, next) => {
             id,
             req.body,
             { new: true, runValidators: true }
-        ).populate('campaignId', 'title budget');
+        ).populate('campaignId', 'title budget')
+         .populate('createdByStaffId', 'firstName lastName staffId');
 
         if (!updatedAdvert) {
             return next(errorHandler(404, 'Advertisement not found'));
@@ -186,7 +193,8 @@ export const updateActualCost = async (req, res, next) => {
             id,
             { actualCost: actualCost },
             { new: true, runValidators: true }
-        ).populate('campaignId', 'title budget');
+        ).populate('campaignId', 'title budget')
+         .populate('createdByStaffId', 'firstName lastName staffId');
 
         if (!advert) {
             return next(errorHandler(404, 'Advertisement not found'));
@@ -232,6 +240,8 @@ export const addScheduleToAdvert = async (req, res, next) => {
         // advert.estimatedCost += (cost || 0); 
 
         const updatedAdvert = await advert.save();
+        await updatedAdvert.populate('campaignId', 'title budget');
+        await updatedAdvert.populate('createdByStaffId', 'firstName lastName staffId');
 
         res.status(200).json({
             success: true,
