@@ -446,13 +446,13 @@ export default function DashOperations() {
           {campaignOptions}
         </Select>
         <div className='flex justify-end'>
-          <Button onClick={handleOpenSummary} disabled={!selectedCampaign || summaryLoading}>
+          <Button outline gradientDuoTone='purpleToPink' onClick={handleOpenSummary} disabled={!selectedCampaign || summaryLoading}>
             {summaryLoading ? (
               <span className='flex items-center gap-2'>
                 <Spinner size='sm' /> Generating...
               </span>
             ) : (
-              'About Company'
+              'About this Campaign (AI)'
             )}
           </Button>
         </div>

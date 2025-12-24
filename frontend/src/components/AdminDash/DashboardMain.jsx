@@ -194,7 +194,7 @@ export default function DashboardMain() {
             <div>
               <p className='text-lg font-semibold text-gray-800 dark:text-white'>Recent Staff Onboarding</p>
               <p className='text-sm text-gray-500 dark:text-gray-400'>
-                Latest users created in the platform (auto-refreshes on load).
+                Latest staffs created in the platform (auto-refreshes on load).
               </p>
             </div>
             <Badge color='gray'>{recentStaff.length}</Badge>

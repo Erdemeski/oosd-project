@@ -142,7 +142,7 @@ export default function DashUsers() {
       {/* Header */}
       <div className='flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4'>
         <div>
-          <h1 className='text-3xl font-semibold text-gray-800 dark:text-white'>User Management</h1>
+          <h1 className='text-3xl font-semibold text-gray-800 dark:text-white'>Staff Management</h1>
           <p className='text-gray-600 dark:text-gray-400 mt-1'>
             Manage users, roles, and permissions.
           </p>
@@ -151,7 +151,7 @@ export default function DashUsers() {
           <Button gradientDuoTone="purpleToPink" outline className="flex items-center p-1">
             <div className='flex items-center gap-1'>
               <FaPlus />
-              Add New User
+              Add New Staff
             </div>
           </Button>
         </Link>
@@ -168,14 +168,14 @@ export default function DashUsers() {
       <div className='grid grid-cols-1 gap-6'>
         <Card className='p-1 md:p-6'>
           <div className="flex justify-between items-center mb-4">
-            <h3 className='text-lg font-semibold text-gray-800 dark:text-white'>Users ({users.length})</h3>
+            <h3 className='text-lg font-semibold text-gray-800 dark:text-white'>Staffs ({users.length})</h3>
             {loading && <Spinner size="sm" />}
           </div>
 
           {loading ? (
             <div className="flex justify-center items-center py-8">
               <Spinner size="lg" />
-              <span className="ml-2">Loading users...</span>
+              <span className="ml-2">Loading staffs...</span>
             </div>
           ) : (
             <div className="overflow-x-auto">

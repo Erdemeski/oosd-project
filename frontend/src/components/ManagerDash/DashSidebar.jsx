@@ -72,10 +72,10 @@ export default function DashSidebar({ tab }) {
                             <Link to='/manager-dashboard?tab=users'>
                                 {!currentUser.isAdmin ? (
                                     <div className='bg-red-100 rounded-lg border border-red-200'>
-                                        <Sidebar.Item active={tab === 'users'} icon={HiOutlineUserGroup} as='div'>Users</Sidebar.Item>
+                                        <Sidebar.Item active={tab === 'users'} icon={HiOutlineUserGroup} as='div'>Staffs</Sidebar.Item>
                                     </div>
                                 ) : (
-                                    <Sidebar.Item active={tab === 'users'} icon={HiOutlineUserGroup} as='div'>Users</Sidebar.Item>
+                                    <Sidebar.Item active={tab === 'users'} icon={HiOutlineUserGroup} as='div'>Staffs</Sidebar.Item>
                                 )}
                             </Link>
                         )}
