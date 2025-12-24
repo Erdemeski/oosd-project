@@ -19,10 +19,13 @@ const ConceptNoteSchema = new mongoose.Schema({
     title: {
         type: String,
         trim: true
+    },
+    estimatedBudget: {
+        type: Number,
+        min: 0
     }
 }, {
     timestamps: true
 });
 
 export default mongoose.model('ConceptNote', ConceptNoteSchema);
-
