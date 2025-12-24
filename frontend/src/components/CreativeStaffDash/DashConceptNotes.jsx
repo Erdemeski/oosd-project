@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Select, Spinner, Textarea, TextInput, Table } from 'flowbite-react';
+import { Alert, Badge, Button, Card, Label, Modal, Select, Spinner, Textarea, TextInput, Table } from 'flowbite-react';
+import { HiSparkles } from 'react-icons/hi';
 import { useSelector } from 'react-redux';
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
+  return `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+};
 
 export default function DashConceptNotes() {
   const { currentUser } = useSelector((state) => state.user);
@@ -14,9 +20,15 @@ export default function DashConceptNotes() {
     campaignId: '',
     title: '',
     content: '',
+    estimatedBudget: '',
   });
 
   const [notesCampaign, setNotesCampaign] = useState('');
+  const [showIdeaModal, setShowIdeaModal] = useState(false);
+  const [ideaPrompt, setIdeaPrompt] = useState('');
+  const [ideaLoading, setIdeaLoading] = useState(false);
+  const [ideaError, setIdeaError] = useState('');
+  const [ideaResults, setIdeaResults] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,13 +76,27 @@ export default function DashConceptNotes() {
       setError('Campaign and content fields are required');
       return;
     }
+    const hasEstimatedBudget = noteForm.estimatedBudget !== '';
+    const parsedBudget = hasEstimatedBudget ? Number(noteForm.estimatedBudget) : null;
+    if (hasEstimatedBudget && (!Number.isFinite(parsedBudget) || parsedBudget < 0)) {
+      setError('Estimated budget must be a positive number');
+      return;
+    }
     try {
       setError('');
+      const payload = {
+        campaignId: noteForm.campaignId,
+        title: noteForm.title,
+        content: noteForm.content,
+      };
+      if (hasEstimatedBudget) {
+        payload.estimatedBudget = parsedBudget;
+      }
       const res = await fetch('/api/concept-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(noteForm),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -82,6 +108,7 @@ export default function DashConceptNotes() {
         campaignId: '',
         title: '',
         content: '',
+        estimatedBudget: '',
       });
       if (notesCampaign && (notesCampaign === data.data?.campaignId?._id || notesCampaign === data.data?.campaignId)) {
         setNotesCampaign(notesCampaign); // refresh filter pipeline
@@ -91,6 +118,63 @@ export default function DashConceptNotes() {
     } finally {
       setTimeout(() => setSuccessMessage(''), 4000);
     }
+  };
+
+  const handleOpenIdeaModal = () => {
+    setIdeaPrompt(noteForm.content || '');
+    setIdeaError('');
+    setIdeaResults([]);
+    setShowIdeaModal(true);
+  };
+
+  const handleGenerateIdeas = async () => {
+    const trimmedPrompt = ideaPrompt.trim();
+    if (!noteForm.campaignId) {
+      setIdeaError('Select a campaign to generate ideas.');
+      return;
+    }
+    if (!trimmedPrompt) {
+      setIdeaError('Add a prompt or reference to generate ideas.');
+      return;
+    }
+    try {
+      setIdeaLoading(true);
+      setIdeaError('');
+      setIdeaResults([]);
+      const res = await fetch('/api/concept-notes/generate-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          campaignId: noteForm.campaignId,
+          prompt: trimmedPrompt,
+          titleHint: noteForm.title,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Unable to generate ideas');
+      }
+      const ideas = Array.isArray(data.data) ? data.data : [];
+      setIdeaResults(ideas);
+    } catch (err) {
+      setIdeaError(err.message || 'Unable to generate ideas right now.');
+    } finally {
+      setIdeaLoading(false);
+    }
+  };
+
+  const handleUseIdea = (idea) => {
+    const channelsLine = idea.channels?.length
+      ? `\n\nSuggested channels:\n- ${idea.channels.join('\n- ')}`
+      : '';
+    setNoteForm((prev) => ({
+      ...prev,
+      title: idea.title,
+      content: `${idea.summary}${channelsLine}`,
+      estimatedBudget: idea.estimatedBudget ? String(idea.estimatedBudget) : prev.estimatedBudget,
+    }));
+    setShowIdeaModal(false);
   };
 
   const campaignOptions = campaigns.map((campaign) => {
@@ -117,6 +201,11 @@ export default function DashConceptNotes() {
             <Badge color='purple'>{note.campaignId?.title || 'Campaign'}</Badge>
           </div>
           <p className='text-sm text-gray-600 dark:text-gray-300 mt-2 whitespace-pre-line'>{note.content}</p>
+          {note.estimatedBudget !== undefined && note.estimatedBudget !== null && (
+            <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>
+              Estimated budget: {formatCurrency(note.estimatedBudget)}
+            </p>
+          )}
         </div>
       ))}
     </div>
@@ -192,7 +281,19 @@ export default function DashConceptNotes() {
             value={noteForm.content}
             onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
           />
-          <div className='flex justify-end'>
+          <TextInput
+            type='number'
+            min='0'
+            step='100'
+            placeholder='Estimated budget (optional)'
+            value={noteForm.estimatedBudget}
+            onChange={(e) => setNoteForm({ ...noteForm, estimatedBudget: e.target.value })}
+          />
+          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2'>
+            <Button color='gray' type='button' onClick={handleOpenIdeaModal}>
+              <HiSparkles className='mr-2 h-5 w-5' />
+              Generate Ideas
+            </Button>
             <Button type='submit'>Save Concept Note</Button>
           </div>
         </form>
@@ -240,6 +341,7 @@ export default function DashConceptNotes() {
                 <Table.HeadCell>Campaign</Table.HeadCell>
                 <Table.HeadCell>Created By</Table.HeadCell>
                 <Table.HeadCell>Created At</Table.HeadCell>
+                <Table.HeadCell>Est. Budget</Table.HeadCell>
               </Table.Head>
               <Table.Body className='divide-y'>
                 {conceptNotes.map((note) => (
@@ -254,6 +356,11 @@ export default function DashConceptNotes() {
                     <Table.Cell>
                       {note.createdAt ? new Date(note.createdAt).toLocaleString() : '—'}
                     </Table.Cell>
+                    <Table.Cell>
+                      {note.estimatedBudget !== undefined && note.estimatedBudget !== null
+                        ? formatCurrency(note.estimatedBudget)
+                        : '—'}
+                    </Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
@@ -261,8 +368,110 @@ export default function DashConceptNotes() {
           </div>
         )}
       </Card>
+
+      <Modal show={showIdeaModal} onClose={() => setShowIdeaModal(false)} size='2xl'>
+        <Modal.Header>Generate Concept Ideas</Modal.Header>
+        <Modal.Body>
+          <div className='space-y-4'>
+            <div className='grid gap-3 md:grid-cols-2'>
+              <div>
+                <Label htmlFor='ideaCampaign' value='Campaign' />
+                <Select
+                  id='ideaCampaign'
+                  value={noteForm.campaignId}
+                  onChange={(e) => setNoteForm({ ...noteForm, campaignId: e.target.value })}
+                >
+                  <option value=''>Select a campaign</option>
+                  {campaignOptions}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor='ideaTitleHint' value='Title hint (optional)' />
+                <TextInput
+                  id='ideaTitleHint'
+                  placeholder='Hero idea, campaign focus, or angle'
+                  value={noteForm.title}
+                  onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor='ideaPrompt' value='Prompt or reference' />
+              <Textarea
+                id='ideaPrompt'
+                rows={4}
+                placeholder='Describe the inspiration, audience, or references for the idea...'
+                value={ideaPrompt}
+                onChange={(e) => setIdeaPrompt(e.target.value)}
+              />
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                Use the campaign plus your prompt to steer tone, channel, and budget scope.
+              </p>
+            </div>
+            {ideaError && (
+              <Alert color='failure' onDismiss={() => setIdeaError('')}>
+                {ideaError}
+              </Alert>
+            )}
+            {ideaLoading && (
+              <div className='flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300'>
+                <Spinner size='sm' />
+                Generating ideas...
+              </div>
+            )}
+            {!ideaLoading && ideaResults.length === 0 && (
+              <p className='text-sm text-gray-500 dark:text-gray-400'>
+                Add a prompt and click Generate to see AI ideas with estimated budgets.
+              </p>
+            )}
+            {!ideaLoading && ideaResults.length > 0 && (
+              <div className='space-y-3'>
+                {ideaResults.map((idea) => (
+                  <div key={idea.id} className='rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3'>
+                    <div className='flex flex-col lg:flex-row lg:items-start lg:justify-between gap-2'>
+                      <div className='space-y-1'>
+                        <p className='font-semibold text-gray-900 dark:text-white'>{idea.title}</p>
+                        <p className='text-sm text-gray-600 dark:text-gray-300'>{idea.summary}</p>
+                      </div>
+                      <div className='flex flex-wrap gap-2'>
+                        <Badge color='info'>Est. {formatCurrency(idea.estimatedBudget)}</Badge>
+                      </div>
+                    </div>
+                    <div className='flex flex-wrap gap-2'>
+                      {idea.channels.map((channel) => (
+                        <Badge key={channel} color='gray'>
+                          {channel}
+                        </Badge>
+                      ))}
+                    </div>
+                    {idea.estimatedBudget !== null && idea.estimatedBudget !== undefined && (
+                      <div className='flex justify-end'>
+                        <Button size='xs' onClick={() => handleUseIdea(idea)}>
+                          Use this idea
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal.Body>
+        <Modal.Footer className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2'>
+          <p className='text-xs text-gray-500 dark:text-gray-400'>
+            Generated ideas are local suggestions. Adjust copy and budgets as needed.
+          </p>
+          <div className='flex flex-col sm:flex-row gap-2'>
+            <Button color='gray' onClick={() => setShowIdeaModal(false)}>
+              Close
+            </Button>
+            <Button onClick={handleGenerateIdeas} disabled={ideaLoading}>
+              <HiSparkles className='mr-2 h-5 w-5' />
+              Generate
+            </Button>
+          </div>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
-
-

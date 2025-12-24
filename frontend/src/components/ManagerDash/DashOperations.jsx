@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Select, Spinner, Table, TextInput, Textarea } from 'flowbite-react';
+import { Alert, Badge, Button, Card, Modal, Select, Spinner, Table, TextInput, Textarea } from 'flowbite-react';
 import { FaPlus } from 'react-icons/fa';
 import { TbSpeakerphone } from 'react-icons/tb';
 
@@ -21,6 +21,11 @@ export default function DashOperations() {
   const [budgetInfo, setBudgetInfo] = useState(null);
   const [budgetLoading, setBudgetLoading] = useState(false);
   const [budgetError, setBudgetError] = useState('');
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
+  const [summaryData, setSummaryData] = useState(null);
+  const [summaryCampaignId, setSummaryCampaignId] = useState('');
 
   const [newAdvert, setNewAdvert] = useState({
     campaignId: '',
@@ -90,6 +95,10 @@ export default function DashOperations() {
     if (!selectedCampaign) {
       setBudgetInfo(null);
       setBudgetError('');
+      setSummaryData(null);
+      setSummaryError('');
+      setSummaryCampaignId('');
+      setShowSummaryModal(false);
       return;
     }
 
@@ -115,6 +124,49 @@ export default function DashOperations() {
 
     fetchBudget();
   }, [selectedCampaign]);
+
+  const handleOpenSummary = async (forceRefresh = false) => {
+    if (!selectedCampaign) {
+      setError('Select a campaign to generate the overview');
+      return;
+    }
+    setShowSummaryModal(true);
+    if (!forceRefresh && summaryCampaignId === selectedCampaign && summaryData) {
+      return;
+    }
+    try {
+      setSummaryLoading(true);
+      setSummaryError('');
+      setSummaryData(null);
+      const res = await fetch(`/api/campaigns/${selectedCampaign}/operations-summary`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Unable to generate campaign overview');
+      }
+      setSummaryData(data.data);
+      setSummaryCampaignId(selectedCampaign);
+    } catch (err) {
+      setSummaryError(err.message || 'Unable to generate campaign overview');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const renderSummaryList = (items, emptyLabel) => {
+    if (!items || items.length === 0) {
+      return <p className='text-sm text-gray-500 dark:text-gray-400'>{emptyLabel}</p>;
+    }
+    return (
+      <ul className='list-disc pl-5 text-sm text-gray-700 dark:text-gray-300 space-y-1'>
+        {items.map((item, index) => (
+          <li key={`${item}-${index}`}>{item}</li>
+        ))}
+      </ul>
+    );
+  };
 
   const noteCountByCampaign = useMemo(() => {
     const counts = {};
@@ -393,6 +445,17 @@ export default function DashOperations() {
           <option value=''>Pick a campaign</option>
           {campaignOptions}
         </Select>
+        <div className='flex justify-end'>
+          <Button onClick={handleOpenSummary} disabled={!selectedCampaign || summaryLoading}>
+            {summaryLoading ? (
+              <span className='flex items-center gap-2'>
+                <Spinner size='sm' /> Generating...
+              </span>
+            ) : (
+              'About Company'
+            )}
+          </Button>
+        </div>
       </Card>
 
       {selectedCampaign ? (
@@ -642,7 +705,62 @@ export default function DashOperations() {
           </div>
         </Card>
       </div>
+
+      <Modal show={showSummaryModal} onClose={() => setShowSummaryModal(false)} size='2xl'>
+        <Modal.Header>Campaign Overview (AI)</Modal.Header>
+        <Modal.Body>
+          <div className='space-y-4'>
+            {summaryLoading && (
+              <div className='flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300'>
+                <Spinner size='sm' />
+                Generating summary...
+              </div>
+            )}
+            {summaryError && (
+              <Alert color='failure' onDismiss={() => setSummaryError('')}>
+                {summaryError}
+              </Alert>
+            )}
+            {!summaryLoading && !summaryError && summaryData && (
+              <div className='space-y-4'>
+                <div>
+                  <p className='text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400'>Summary</p>
+                  <p className='text-sm text-gray-700 dark:text-gray-200'>{summaryData.summary || '—'}</p>
+                </div>
+                <div>
+                  <p className='text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400'>Concept Summary</p>
+                  <p className='text-sm text-gray-700 dark:text-gray-200'>{summaryData.conceptSummary || '—'}</p>
+                </div>
+                <div>
+                  <p className='text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400'>Highlights</p>
+                  {renderSummaryList(summaryData.highlights, 'No highlights available.')}
+                </div>
+                <div>
+                  <p className='text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400'>Risks</p>
+                  {renderSummaryList(summaryData.risks, 'No risks flagged.')}
+                </div>
+                <div>
+                  <p className='text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400'>Next Actions</p>
+                  {renderSummaryList(summaryData.nextActions, 'No next actions suggested.')}
+                </div>
+              </div>
+            )}
+            {!summaryLoading && !summaryError && !summaryData && (
+              <p className='text-sm text-gray-500 dark:text-gray-400'>
+                Select a campaign and generate an AI overview to see summary insights.
+              </p>
+            )}
+          </div>
+        </Modal.Body>
+        <Modal.Footer className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2'>
+          <p className='text-xs text-gray-500 dark:text-gray-400'>
+            The overview is generated from campaign budgets, concept notes, and adverts.
+          </p>
+          <Button color='gray' onClick={() => setShowSummaryModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
-

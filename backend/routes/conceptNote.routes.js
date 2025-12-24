@@ -1,6 +1,7 @@
 import express from 'express';
 import { 
     createConceptNote, 
+    generateConceptIdeas,
     getConceptNotesByCampaign, 
     getAllConceptNotes,
     updateConceptNote,
@@ -11,6 +12,7 @@ import { verifyToken, verifyCreativeStaff, verifyAnyStaff } from '../utils/verif
 const router = express.Router();
 
 router.post('/', verifyToken, verifyCreativeStaff, createConceptNote);
+router.post('/generate-ideas', verifyToken, verifyCreativeStaff, generateConceptIdeas);
 router.get('/:campaignId', verifyToken, verifyAnyStaff, getConceptNotesByCampaign);
 router.get('/', verifyToken, verifyAnyStaff, getAllConceptNotes);
 router.put('/:id', verifyToken, updateConceptNote);
