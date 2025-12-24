@@ -7,35 +7,6 @@ const getOpenAIClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const campaignIdeaPatterns = [
-    /\bcampaign\b/i,
-    /\bmarketing\b/i,
-    /\badvert(?:ising|isement)?\b/i,
-    /\bbrand(?:ing)?\b/i,
-    /\bconcept\b/i,
-    /\bidea\b/i,
-    /\bcreative\b/i,
-    /\blaunch\b/i,
-    /\bpromotion\b/i,
-    /\bproduct\b/i,
-    /\bactivation\b/i,
-    /\bmedia\b/i,
-    /\bcontent\b/i,
-    /\bsocial\b/i,
-    /\binfluencer\b/i,
-    /\booh\b/i,
-    /\boutdoor\b/i,
-    /\btagline\b/i,
-    /\bslogan\b/i,
-    /\bstrategy\b/i,
-    /\bpositioning\b/i
-];
-
-const isCampaignIdeaPrompt = (prompt) => {
-    if (!prompt || typeof prompt !== 'string') return false;
-    return campaignIdeaPatterns.some((pattern) => pattern.test(prompt));
-};
-
 const getBaseBudget = (campaign) => {
     const budget = Number(campaign?.budget);
     if (Number.isFinite(budget) && budget > 0) return budget;
@@ -60,6 +31,52 @@ const extractJsonPayload = (content) => {
     const lastBrace = content.lastIndexOf('}');
     if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) return null;
     return content.slice(firstBrace, lastBrace + 1).trim();
+};
+
+const parseJsonPayload = (content) => {
+    const jsonPayload = extractJsonPayload(content);
+    if (!jsonPayload) return null;
+    try {
+        return JSON.parse(jsonPayload);
+    } catch (error) {
+        return null;
+    }
+};
+
+const isOutOfScopeResponse = (parsed) => {
+    if (parsed?.outOfScope === true) return true;
+    const ideas = Array.isArray(parsed?.ideas) ? parsed.ideas : [];
+    if (ideas.length !== 1) return false;
+    const title = String(ideas[0]?.title || '').toLowerCase();
+    const summary = String(ideas[0]?.summary || '').toLowerCase();
+    return title.includes('out of scope') || summary.includes('only help generate campaign concept');
+};
+
+const getScopeGuardMessages = (prompt) => {
+    const systemMessage = `You are a strict scope guard for an advertising campaign concept ideation tool.
+Approve only prompts that clearly ask for campaign/marketing/advertising/branding concept ideas.
+In-scope prompts must mention at least one of these exact words: campaign, bmarketing, advert, brand, concept, idea, creative, promotion, product, mediacontent, social.
+If the prompt is not clearly about campaign concept ideation, return outOfScope true.
+If the prompt is ambiguous or just a general question (e.g., sports or trivia without marketing context), return outOfScope true.
+Return JSON only:
+{"outOfScope":true,"reason":"..."} or {"outOfScope":false,"reason":"..."}
+Examples of outOfScope:
+- "kim en iyi basketbol oyuncusu sence dünyada"
+- "who won the last world cup"
+- "tell me about basketball rules"
+- "best player in football history"
+Examples of in scope:
+- "campaign ideas to launch a new running shoe"
+- "marketing concept for a summer beverage promotion"
+- "advertising ideas for a new phone brand"
+- "creative social media concept for a product launch"`;
+
+    const userMessage = `Prompt: ${prompt}`;
+
+    return [
+        { role: 'system', content: systemMessage },
+        { role: 'user', content: userMessage }
+    ];
 };
 
 const normalizeChannels = (channels) => {
@@ -178,26 +195,32 @@ export const generateConceptIdeas = async (req, res, next) => {
             });
         }
 
-        if (!isCampaignIdeaPrompt(prompt)) {
-            return res.status(200).json({
-                success: true,
-                data: [
-                    {
-                        id: 'out-of-scope',
-                        title: 'Out of scope request',
-                        summary: 'I can only help generate campaign concept ideas. Please share a campaign-focused prompt.',
-                        channels: [],
-                        estimatedBudget: null,
-                        budgetShare: null
-                    }
-                ]
-            });
-        }
-
         if (!process.env.OPENAI_API_KEY) {
             return res.status(500).json({
                 success: false,
                 error: 'OpenAI API key is not configured'
+            });
+        }
+
+        const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+        const openaiClient = getOpenAIClient();
+        const scopeGuard = await openaiClient.chat.completions.create({
+            model,
+            messages: getScopeGuardMessages(prompt)
+        });
+        const scopeContent = scopeGuard?.choices?.[0]?.message?.content || '';
+        const scopeParsed = parseJsonPayload(scopeContent);
+        if (!scopeParsed || typeof scopeParsed.outOfScope !== 'boolean') {
+            return res.status(502).json({
+                success: false,
+                error: 'AI scope check did not return valid JSON'
+            });
+        }
+        if (scopeParsed.outOfScope) {
+            const reason = String(scopeParsed.reason || '').trim();
+            return res.status(400).json({
+                success: false,
+                error: reason || 'I can only help generate campaign concept ideas. Please share a campaign-focused prompt.'
             });
         }
 
@@ -211,14 +234,13 @@ export const generateConceptIdeas = async (req, res, next) => {
 
         const baseBudget = getBaseBudget(campaign);
         const promptWordCount = String(prompt).trim().split(/\s+/).filter(Boolean).length;
-        const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
-        const systemMessage = `You are a creative strategist. Generate three distinct concept note ideas.
+        const systemMessage = `You are a creative strategist. Generate three distinct campaign concept note ideas.
 Return JSON only with shape:
-{"ideas":[{"title":"...","summary":"...","channels":["..."],"estimatedBudget":12345}]}
+{"outOfScope":false,"ideas":[{"title":"...","summary":"...","channels":["..."],"estimatedBudget":12345}]}
 Each summary should be 2-3 sentences. Include 3-5 channels. Budgets should be realistic in USD.
-If the prompt is not about campaign concept ideation, return:
-{"ideas":[{"title":"Out of scope request","summary":"I can only help generate campaign concept ideas. Please share a campaign-focused prompt.","channels":[],"estimatedBudget":null}]}`;
+If the prompt is not about campaign concept ideation (e.g., sports topics without advertising, branding, or marketing context), return:
+{"outOfScope":true,"ideas":[{"title":"Out of scope request","summary":"I can only help generate campaign concept ideas. Please share a campaign-focused prompt.","channels":[],"estimatedBudget":null}]}`;
 
         const userMessage = `Campaign: ${campaign.title}
 Campaign budget: ${campaign.budget ?? 'unknown'}
@@ -227,7 +249,6 @@ Title hint: ${titleHint || 'none'}
 Prompt: ${prompt}
 Budget guidance: keep estimatedBudget between 5% and 30% of campaign budget when budget is known.`;
 
-        const openaiClient = getOpenAIClient();
         const completion = await openaiClient.chat.completions.create({
             model,
             messages: [
@@ -238,21 +259,21 @@ Budget guidance: keep estimatedBudget between 5% and 30% of campaign budget when
         });
 
         const content = completion?.choices?.[0]?.message?.content || '';
-        const jsonPayload = extractJsonPayload(content);
-        if (!jsonPayload) {
+        const parsed = parseJsonPayload(content);
+        if (!parsed) {
             return res.status(502).json({
                 success: false,
                 error: 'AI response was not valid JSON'
             });
         }
 
-        let parsed;
-        try {
-            parsed = JSON.parse(jsonPayload);
-        } catch (error) {
-            return res.status(502).json({
+        if (isOutOfScopeResponse(parsed)) {
+            const ideas = Array.isArray(parsed?.ideas) ? parsed.ideas : [];
+            const fallbackMessage = 'I can only help generate campaign concept ideas. Please share a campaign-focused prompt.';
+            const message = String(ideas[0]?.summary || '').trim() || fallbackMessage;
+            return res.status(400).json({
                 success: false,
-                error: 'AI response could not be parsed'
+                error: message
             });
         }
 
