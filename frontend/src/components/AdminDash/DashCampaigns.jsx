@@ -345,8 +345,16 @@ export default function DashCampaigns() {
                   <TextInput
                     id="plannedStartDate"
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={formData.plannedStartDate}
-                    onChange={(e) => setFormData({ ...formData, plannedStartDate: e.target.value })}
+                    onChange={(e) => {
+                      const startDate = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        plannedStartDate: startDate,
+                        plannedEndDate: formData.plannedEndDate && startDate > formData.plannedEndDate ? '' : formData.plannedEndDate
+                      });
+                    }}
                   />
                 </div>
                 <div>
@@ -354,6 +362,7 @@ export default function DashCampaigns() {
                   <TextInput
                     id="plannedEndDate"
                     type="date"
+                    min={formData.plannedStartDate || new Date().toISOString().split('T')[0]}
                     value={formData.plannedEndDate}
                     onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
                   />
@@ -436,7 +445,14 @@ export default function DashCampaigns() {
                     id="editPlannedStartDate"
                     type="date"
                     value={formData.plannedStartDate}
-                    onChange={(e) => setFormData({ ...formData, plannedStartDate: e.target.value })}
+                    onChange={(e) => {
+                      const startDate = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        plannedStartDate: startDate,
+                        plannedEndDate: formData.plannedEndDate && startDate > formData.plannedEndDate ? '' : formData.plannedEndDate
+                      });
+                    }}
                   />
                 </div>
                 <div>
@@ -444,6 +460,7 @@ export default function DashCampaigns() {
                   <TextInput
                     id="editPlannedEndDate"
                     type="date"
+                    min={formData.plannedStartDate}
                     value={formData.plannedEndDate}
                     onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
                   />

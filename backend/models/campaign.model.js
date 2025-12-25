@@ -27,8 +27,14 @@ const CampaignSchema = new mongoose.Schema({
         required: true,
         min: 0
     },
-
-    
+    assignedCreativeStaff: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    assignedAccountant: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, {
     timestamps: true
 })

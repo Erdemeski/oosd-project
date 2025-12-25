@@ -3,6 +3,7 @@ import Campaign from '../models/campaign.model.js';
 import Client from '../models/client.model.js';
 import Advert from '../models/advert.model.js';
 import ConceptNote from '../models/conceptNote.model.js';
+import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 
 const getOpenAIClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -147,12 +148,45 @@ export const createCampaign = async (req, res, next) => {
 
 export const getCampaigns = async (req, res, next) => {
     try{
-        const campaigns = await Campaign.find();
+        let campaigns;
+        
+        console.log(`[getCampaigns] User ID: ${req.user.id}, isManager: ${req.user.isManager}, isAdmin: ${req.user.isAdmin}, isCreativeStaff: ${req.user.isCreativeStaff}, isAccountant: ${req.user.isAccountant}`);
+        
+        // Admin and Manager can see all campaigns
+        if (req.user.isManager || req.user.isAdmin) {
+            campaigns = await Campaign.find()
+                .populate('assignedCreativeStaff', 'firstName lastName staffId')
+                .populate('assignedAccountant', 'firstName lastName staffId');
+            console.log(`[getCampaigns] Admin/Manager: returned ${campaigns.length} total campaigns`);
+        } else {
+            // Build OR query depending on user's roles so users with multiple roles see campaigns
+            const orConditions = [];
+            if (req.user.isCreativeStaff) orConditions.push({ assignedCreativeStaff: { $in: [req.user.id] } });
+            if (req.user.isAccountant) orConditions.push({ assignedAccountant: { $in: [req.user.id] } });
+
+            console.log(`[getCampaigns] Building query with conditions:`, orConditions);
+
+            if (orConditions.length === 0) {
+                // No privileged role, return empty list
+                campaigns = [];
+                console.log(`[getCampaigns] User has no creative/accountant roles, returning empty list`);
+            } else {
+                campaigns = await Campaign.find({ $or: orConditions })
+                    .populate('assignedCreativeStaff', 'firstName lastName staffId')
+                    .populate('assignedAccountant', 'firstName lastName staffId');
+                console.log(`[getCampaigns] Staff user: found ${campaigns.length} campaigns matching OR conditions`);
+                if (campaigns.length > 0) {
+                    console.log(`[getCampaigns] Sample campaign:`, JSON.stringify(campaigns[0], null, 2));
+                }
+            }
+        }
+        
         res.status(200).json({
             success: true,
             data: campaigns
         });
     }catch (error) {
+        console.error(`[getCampaigns] Error:`, error);
         res.status(400).json({
             success: false,
             error: error.message
@@ -242,14 +276,33 @@ export const checkCampaignBudgetAndStatus = async (req, res, next) => {
     try {
         const { campaignId } = req.params;
 
-        // Retrieve the campaign
-        const campaign = await Campaign.findById(campaignId);
+        // Retrieve the campaign and assigned staff for authorization checks
+        const campaign = await Campaign.findById(campaignId)
+            .populate('assignedCreativeStaff', '_id')
+            .populate('assignedAccountant', '_id');
         
         if (!campaign) {
             return res.status(404).json({
                 success: false,
                 error: 'Campaign not found'
             });
+        }
+
+        // Authorization: non-admin/manager users must be assigned to this campaign
+        if (!(req.user.isManager || req.user.isAdmin)) {
+            const isAssignedCreative = Array.isArray(campaign.assignedCreativeStaff) && campaign.assignedCreativeStaff.some(s => String(s._id || s) === String(req.user.id));
+            const isAssignedAccountant = Array.isArray(campaign.assignedAccountant) && campaign.assignedAccountant.some(s => String(s._id || s) === String(req.user.id));
+            // If user has any of the staff roles, require matching assignment
+            if (req.user.isCreativeStaff && !isAssignedCreative && !req.user.isAccountant) {
+                return res.status(403).json({ success: false, error: 'Access denied to this campaign' });
+            }
+            if (req.user.isAccountant && !isAssignedAccountant && !req.user.isCreativeStaff) {
+                return res.status(403).json({ success: false, error: 'Access denied to this campaign' });
+            }
+            // If user has both roles, require at least one assignment
+            if (req.user.isCreativeStaff && req.user.isAccountant && !isAssignedCreative && !isAssignedAccountant) {
+                return res.status(403).json({ success: false, error: 'Access denied to this campaign' });
+            }
         }
 
         // Find all adverts linked to this campaign
@@ -310,12 +363,29 @@ export const generateCampaignOperationsSummary = async (req, res, next) => {
             });
         }
 
-        const campaign = await Campaign.findById(campaignId);
+        const campaign = await Campaign.findById(campaignId)
+            .populate('assignedCreativeStaff', '_id')
+            .populate('assignedAccountant', '_id');
         if (!campaign) {
             return res.status(404).json({
                 success: false,
                 error: 'Campaign not found'
             });
+        }
+
+        // Authorization: non-admin/manager users must be assigned to this campaign
+        if (!(req.user.isManager || req.user.isAdmin)) {
+            const isAssignedCreative = Array.isArray(campaign.assignedCreativeStaff) && campaign.assignedCreativeStaff.some(s => String(s._id || s) === String(req.user.id));
+            const isAssignedAccountant = Array.isArray(campaign.assignedAccountant) && campaign.assignedAccountant.some(s => String(s._id || s) === String(req.user.id));
+            if (req.user.isCreativeStaff && !isAssignedCreative && !req.user.isAccountant) {
+                return res.status(403).json({ success: false, error: 'Access denied to this campaign' });
+            }
+            if (req.user.isAccountant && !isAssignedAccountant && !req.user.isCreativeStaff) {
+                return res.status(403).json({ success: false, error: 'Access denied to this campaign' });
+            }
+            if (req.user.isCreativeStaff && req.user.isAccountant && !isAssignedCreative && !isAssignedAccountant) {
+                return res.status(403).json({ success: false, error: 'Access denied to this campaign' });
+            }
         }
 
         const [conceptNotes, adverts] = await Promise.all([
@@ -480,6 +550,112 @@ Keep summary under 80 words. Provide conceptSummary in 1-2 sentences that start 
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+// Get staff list for assignment (only Creative Staff and Accountant)
+export const getStaffForAssignment = async (req, res, next) => {
+    // Only Manager can get staff list for assignment
+    if (req.user.isManager !== true) {
+        return next(errorHandler(403, 'Access denied - Manager privileges required'));
+    }
+
+    try {
+        const { staffType } = req.query; // 'creative' or 'accountant'
+        
+        let query = {};
+        if (staffType === 'creative') {
+            query = { isCreativeStaff: true };
+        } else if (staffType === 'accountant') {
+            query = { isAccountant: true };
+        } else {
+            // Return both if no type specified
+            query = { $or: [{ isCreativeStaff: true }, { isAccountant: true }] };
+        }
+
+        const staff = await User.find(query).select('_id firstName lastName staffId isCreativeStaff isAccountant');
+        
+        res.status(200).json({
+            success: true,
+            data: staff
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+// Assign staff to campaign (only Manager)
+export const assignStaffToCampaign = async (req, res, next) => {
+    // Only Manager can assign staff
+    if (req.user.isManager !== true) {
+        return next(errorHandler(403, 'Access denied - Manager privileges required'));
+    }
+
+    try {
+        const { campaignId } = req.params;
+        const { creativeStaffIds, accountantIds } = req.body;
+
+        const campaign = await Campaign.findById(campaignId);
+        if (!campaign) {
+            return res.status(404).json({
+                success: false,
+                error: 'Campaign not found'
+            });
+        }
+
+        // Validate staff IDs if provided
+        if (creativeStaffIds && Array.isArray(creativeStaffIds)) {
+            for (const staffId of creativeStaffIds) {
+                const staff = await User.findById(staffId);
+                if (!staff || !staff.isCreativeStaff) {
+                    return res.status(400).json({
+                        success: false,
+                        error: `Invalid creative staff ID: ${staffId}`
+                    });
+                }
+            }
+        }
+
+        if (accountantIds && Array.isArray(accountantIds)) {
+            for (const staffId of accountantIds) {
+                const staff = await User.findById(staffId);
+                if (!staff || !staff.isAccountant) {
+                    return res.status(400).json({
+                        success: false,
+                        error: `Invalid accountant ID: ${staffId}`
+                    });
+                }
+            }
+        }
+
+        // Update campaign with assigned staff
+        const updateData = {};
+        if (creativeStaffIds !== undefined) {
+            updateData.assignedCreativeStaff = creativeStaffIds;
+        }
+        if (accountantIds !== undefined) {
+            updateData.assignedAccountant = accountantIds;
+        }
+
+        const updatedCampaign = await Campaign.findByIdAndUpdate(
+            campaignId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).populate('assignedCreativeStaff', 'firstName lastName staffId')
+         .populate('assignedAccountant', 'firstName lastName staffId');
+
+        res.status(200).json({
+            success: true,
+            data: updatedCampaign
+        });
+    } catch (error) {
+        res.status(400).json({
             success: false,
             error: error.message
         });

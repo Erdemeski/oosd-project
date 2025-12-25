@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Modal, Label, TextInput, Select, Alert, Spinner, Table } from 'flowbite-react';
-import { FaEdit, FaTrash, FaPlus, FaDollarSign, FaCalendarAlt, FaUser } from 'react-icons/fa';
+import { Card, Button, Modal, Label, TextInput, Select, Alert, Spinner, Table, Checkbox } from 'flowbite-react';
+import { FaEdit, FaTrash, FaPlus, FaDollarSign, FaCalendarAlt, FaUser, FaUsers } from 'react-icons/fa';
 import { TbSpeakerphone } from 'react-icons/tb';
 
 export default function DashCampaigns() {
@@ -22,12 +22,40 @@ export default function DashCampaigns() {
   });
   const [submitLoading, setSubmitLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [creativeStaff, setCreativeStaff] = useState([]);
+  const [accountants, setAccountants] = useState([]);
+  const [selectedCreativeStaff, setSelectedCreativeStaff] = useState([]);
+  const [selectedAccountants, setSelectedAccountants] = useState([]);
 
   // Fetch campaigns and clients on component mount
   useEffect(() => {
     fetchCampaigns();
     fetchClients();
+    fetchStaff();
   }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const [creativeRes, accountantRes] = await Promise.all([
+        fetch('/api/campaigns/staff-for-assignment?staffType=creative', { credentials: 'include' }),
+        fetch('/api/campaigns/staff-for-assignment?staffType=accountant', { credentials: 'include' })
+      ]);
+      const [creativeData, accountantData] = await Promise.all([
+        creativeRes.json(),
+        accountantRes.json()
+      ]);
+      if (creativeRes.ok) {
+        setCreativeStaff(creativeData.data || []);
+      }
+      if (accountantRes.ok) {
+        setAccountants(accountantData.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch staff:', error);
+    }
+  };
 
   const fetchCampaigns = async () => {
     try {
@@ -175,6 +203,45 @@ export default function DashCampaigns() {
     return client ? `${client.name} ${client.surname}` : 'Unknown Client';
   };
 
+  const handleOpenAssignModal = (campaign) => {
+    setSelectedCampaign(campaign);
+    setSelectedCreativeStaff(campaign.assignedCreativeStaff?.map(s => s._id || s) || []);
+    setSelectedAccountants(campaign.assignedAccountant?.map(s => s._id || s) || []);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignStaff = async (e) => {
+    e.preventDefault();
+    if (!selectedCampaign) return;
+
+    try {
+      setAssignLoading(true);
+      const res = await fetch(`/api/campaigns/${selectedCampaign._id}/assign-staff`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          creativeStaffIds: selectedCreativeStaff,
+          accountantIds: selectedAccountants
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCampaigns(campaigns.map(campaign => campaign._id === selectedCampaign._id ? data.data : campaign));
+        setShowAssignModal(false);
+        setSelectedCampaign(null);
+        setSelectedCreativeStaff([]);
+        setSelectedAccountants([]);
+      } else {
+        setError(data.error || 'Failed to assign staff');
+      }
+    } catch (error) {
+      setError('Failed to assign staff');
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
   return (
     <div className='relative isolate flex-1 p-4 md:p-7'>
       <div
@@ -285,6 +352,14 @@ export default function DashCampaigns() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
+                            color="purple"
+                            onClick={() => handleOpenAssignModal(campaign)}
+                            title="Assign Staff"
+                          >
+                            <FaUsers />
+                          </Button>
+                          <Button
+                            size="sm"
                             color="dark"
                             onClick={() => handleEditCampaign(campaign)}
                           >
@@ -345,8 +420,16 @@ export default function DashCampaigns() {
                   <TextInput
                     id="plannedStartDate"
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={formData.plannedStartDate}
-                    onChange={(e) => setFormData({ ...formData, plannedStartDate: e.target.value })}
+                    onChange={(e) => {
+                      const startDate = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        plannedStartDate: startDate,
+                        plannedEndDate: formData.plannedEndDate && startDate > formData.plannedEndDate ? '' : formData.plannedEndDate
+                      });
+                    }}
                   />
                 </div>
                 <div>
@@ -354,6 +437,7 @@ export default function DashCampaigns() {
                   <TextInput
                     id="plannedEndDate"
                     type="date"
+                    min={formData.plannedStartDate || new Date().toISOString().split('T')[0]}
                     value={formData.plannedEndDate}
                     onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
                   />
@@ -436,7 +520,14 @@ export default function DashCampaigns() {
                     id="editPlannedStartDate"
                     type="date"
                     value={formData.plannedStartDate}
-                    onChange={(e) => setFormData({ ...formData, plannedStartDate: e.target.value })}
+                    onChange={(e) => {
+                      const startDate = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        plannedStartDate: startDate,
+                        plannedEndDate: formData.plannedEndDate && startDate > formData.plannedEndDate ? '' : formData.plannedEndDate
+                      });
+                    }}
                   />
                 </div>
                 <div>
@@ -444,6 +535,7 @@ export default function DashCampaigns() {
                   <TextInput
                     id="editPlannedEndDate"
                     type="date"
+                    min={formData.plannedStartDate}
                     value={formData.plannedEndDate}
                     onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
                   />
@@ -507,6 +599,86 @@ export default function DashCampaigns() {
             Cancel
           </Button>
         </Modal.Footer>
+      </Modal>
+
+      {/* Assign Staff Modal */}
+      <Modal show={showAssignModal} onClose={() => setShowAssignModal(false)} size="2xl">
+        <Modal.Header>Assign Staff to Campaign</Modal.Header>
+        <form onSubmit={handleAssignStaff}>
+          <Modal.Body>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                  Campaign: {selectedCampaign?.title}
+                </h3>
+              </div>
+
+              <div>
+                <Label value="Creative Staff" className="mb-3 block" />
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  {creativeStaff.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No creative staff available</p>
+                  ) : (
+                    creativeStaff.map((staff) => (
+                      <div key={staff._id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`creative-${staff._id}`}
+                          checked={selectedCreativeStaff.includes(staff._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCreativeStaff([...selectedCreativeStaff, staff._id]);
+                            } else {
+                              setSelectedCreativeStaff(selectedCreativeStaff.filter(id => id !== staff._id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`creative-${staff._id}`} className="flex-1 cursor-pointer">
+                          {staff.firstName} {staff.lastName} ({staff.staffId})
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label value="Accountants" className="mb-3 block" />
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  {accountants.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No accountants available</p>
+                  ) : (
+                    accountants.map((staff) => (
+                      <div key={staff._id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`accountant-${staff._id}`}
+                          checked={selectedAccountants.includes(staff._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAccountants([...selectedAccountants, staff._id]);
+                            } else {
+                              setSelectedAccountants(selectedAccountants.filter(id => id !== staff._id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`accountant-${staff._id}`} className="flex-1 cursor-pointer">
+                          {staff.firstName} {staff.lastName} ({staff.staffId})
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button type="submit" disabled={assignLoading}>
+              {assignLoading ? <><Spinner size="sm" /> <span className="ml-2">Assigning...</span></> : 'Assign Staff'}
+            </Button>
+            <Button color="gray" onClick={() => setShowAssignModal(false)}>
+              Cancel
+            </Button>
+          </Modal.Footer>
+        </form>
       </Modal>
     </div>
   );

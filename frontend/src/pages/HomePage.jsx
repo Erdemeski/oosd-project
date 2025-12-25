@@ -81,7 +81,7 @@ export default function HomePage() {
           </div>
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 top-0 -z-50 transform-gpu overflow-hidden blur-3xl sm:-top-0 translate-y-[1000px] lg:translate-x-[-500px] rotate-180"
+            className="absolute inset-x-0 top-0 -z-50 transform-gpu overflow-hidden blur-3xl sm:-top-0 translate-y-[700px] lg:translate-x-[-400px] rotate-180"
           >
             <div
               style={{
@@ -101,9 +101,9 @@ export default function HomePage() {
                 Transform your brand with innovative <br /> advertising strategies that captivate and convert! <span className='text-2xl'>🚀</span>
               </p>
               <div className="mt-10 flex flex-row sm:flex-col items-center justify-center gap-4">
-                <Link to='/public-menu'>
+                <Link to='/staff-sign-in'>
                   <button className="px-6 py-3 text-lg font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-md hover:scale-105 transition-transform">
-                    View Our Portfolio
+                    Staff Sign-In
                   </button>
                 </Link>
                 <Link to='/about'>
@@ -208,84 +208,6 @@ export default function HomePage() {
           </div>
         </div>
       </motion.section>
-
-      {loading === false ? (
-        <motion.section
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className='mt-0 sm:mt-10'
-        >
-          {recentAdvs && <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className='text-center font-semibold text-3xl mt-5 z-40 relative'
-          >
-            Our Latest Campaigns
-          </motion.h1>}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className='flex flex-wrap gap-5 m-5 justify-center'
-          >
-            {recentAdvs && recentAdvs.map((advertisement) => (
-              <motion.div
-                key={advertisement._id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="w-full sm:w-[430px]"
-              >
-                {/*                 <AdvCard advertisement={advertisement} currency={currency} />
- */}              </motion.div>
-            ))}
-          </motion.div>
-        </motion.section>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className='mt-0 sm:mt-10 z-10'
-        >
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className='text-center font-semibold text-3xl mt-5 z-50 relative'
-          >
-            Our Latest Campaigns
-          </motion.h1>
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className='flex flex-wrap gap-5 m-5 justify-center'
-          >
-            {Array.from({ length: 3 }).map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="w-full sm:w-[430px]"
-              >
-                <AdvCardSkeleton />
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
-      )}
 
       <section>
         <div>

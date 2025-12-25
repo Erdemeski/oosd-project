@@ -643,11 +643,20 @@ export default function DashOperations() {
                   />
                   <TextInput
                     type='date'
+                    min={new Date().toISOString().split('T')[0]}
                     value={scheduleData.startDate}
-                    onChange={(e) => setScheduleData({ ...scheduleData, startDate: e.target.value })}
+                    onChange={(e) => {
+                      const startDate = e.target.value;
+                      setScheduleData({ 
+                        ...scheduleData, 
+                        startDate: startDate,
+                        endDate: scheduleData.endDate && startDate > scheduleData.endDate ? '' : scheduleData.endDate
+                      });
+                    }}
                   />
                   <TextInput
                     type='date'
+                    min={scheduleData.startDate || new Date().toISOString().split('T')[0]}
                     value={scheduleData.endDate}
                     onChange={(e) => setScheduleData({ ...scheduleData, endDate: e.target.value })}
                   />

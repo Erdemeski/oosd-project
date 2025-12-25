@@ -54,21 +54,41 @@ export default function DashConceptNotes() {
     fetchData();
   }, []);
 
+  const visibleCampaigns = useMemo(() => {
+    if (!currentUser?._id) return [];
+    return campaigns.filter((c) => {
+      if (!Array.isArray(c.assignedCreativeStaff)) return false;
+      return c.assignedCreativeStaff.some(
+        (s) => s === currentUser._id || (s && (s._id === currentUser._id || s.toString() === currentUser._id))
+      );
+    });
+  }, [campaigns, currentUser]);
+
+  const visibleCampaignIds = useMemo(() => visibleCampaigns.map((c) => c._id), [visibleCampaigns]);
+
+  const visibleConceptNotes = useMemo(() => {
+    return conceptNotes.filter((note) => {
+      const id = note?.campaignId?._id || note?.campaignId;
+      return id && visibleCampaignIds.includes(id);
+    });
+  }, [conceptNotes, visibleCampaignIds]);
+
   const noteCountByCampaign = useMemo(() => {
     const counts = {};
     conceptNotes.forEach((note) => {
       const id = note?.campaignId?._id || note?.campaignId;
-      if (id) counts[id] = (counts[id] || 0) + 1;
+      if (id && visibleCampaignIds.includes(id)) counts[id] = (counts[id] || 0) + 1;
     });
     return counts;
-  }, [conceptNotes]);
+  }, [conceptNotes, visibleCampaignIds]);
 
   const filteredNotes = useMemo(() => {
     if (!notesCampaign) return [];
-    return conceptNotes.filter(
-      (note) => (note?.campaignId?._id || note?.campaignId) === notesCampaign
-    );
-  }, [conceptNotes, notesCampaign]);
+    return conceptNotes.filter((note) => {
+      const id = note?.campaignId?._id || note?.campaignId;
+      return id === notesCampaign && visibleCampaignIds.includes(id);
+    });
+  }, [conceptNotes, notesCampaign, visibleCampaignIds]);
 
   const handleConceptNoteSubmit = async (e) => {
     e.preventDefault();
@@ -177,7 +197,7 @@ export default function DashConceptNotes() {
     setShowIdeaModal(false);
   };
 
-  const campaignOptions = campaigns.map((campaign) => {
+  const campaignOptions = visibleCampaigns.map((campaign) => {
     const count = noteCountByCampaign[campaign._id] || 0;
     return (
       <option key={campaign._id} value={campaign._id}>
@@ -329,9 +349,9 @@ export default function DashConceptNotes() {
               A full browse view without filters so everyone can stay aligned.
             </p>
           </div>
-          <Badge color='purple'>{conceptNotes.length}</Badge>
+          <Badge color='purple'>{visibleConceptNotes.length}</Badge>
         </div>
-        {conceptNotes.length === 0 ? (
+        {visibleConceptNotes.length === 0 ? (
           <p className='text-sm text-gray-500 dark:text-gray-400'>No concept notes recorded.</p>
         ) : (
           <div className='overflow-x-auto'>
@@ -344,7 +364,7 @@ export default function DashConceptNotes() {
                 <Table.HeadCell>Est. Budget</Table.HeadCell>
               </Table.Head>
               <Table.Body className='divide-y'>
-                {conceptNotes.map((note) => (
+                {visibleConceptNotes.map((note) => (
                   <Table.Row key={note._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
                     <Table.Cell>{note.title || 'Untitled Concept'}</Table.Cell>
                     <Table.Cell>{note.campaignId?.title || '—'}</Table.Cell>

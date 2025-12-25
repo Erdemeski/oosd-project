@@ -232,12 +232,12 @@ export default function Header() {
                             Home
                         </Link>
                     </Navbar.Link>
-                    <Navbar.Link active={path === "/portfolio"} as={'div'}>
+{/*                     <Navbar.Link active={path === "/portfolio"} as={'div'}>
                         <Link to='/portfolio'>
                             Portfolio
                         </Link>
                     </Navbar.Link>
-                    <Navbar.Link active={path === "/about"} as={'div'}>
+ */}                    <Navbar.Link active={path === "/about"} as={'div'}>
                         <Link to='/about'>
                             Contact Us
                         </Link>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Select, Spinner, Table, TextInput } from 'flowbite-react';
+import { useSelector } from 'react-redux';
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined) return '-';
@@ -7,6 +8,7 @@ const formatCurrency = (value) => {
 };
 
 export default function DashFinancials() {
+  const { currentUser } = useSelector((state) => state.user);
   const [campaigns, setCampaigns] = useState([]);
   const [adverts, setAdverts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,31 @@ export default function DashFinancials() {
 
     fetchBasics();
   }, []);
+
+  const visibleCampaigns = useMemo(() => {
+    if (!currentUser?._id) return [];
+    return campaigns.filter((c) => {
+      if (!Array.isArray(c.assignedAccountant)) return false;
+      return c.assignedAccountant.some(
+        (s) => s === currentUser._id || (s && (s._id === currentUser._id || s.toString() === currentUser._id))
+      );
+    });
+  }, [campaigns, currentUser]);
+
+  const visibleCampaignIds = useMemo(() => visibleCampaigns.map((c) => c._id), [visibleCampaigns]);
+
+  useEffect(() => {
+    if (selectedCampaign && !visibleCampaignIds.includes(selectedCampaign)) {
+      setSelectedCampaign('');
+    }
+  }, [visibleCampaignIds]);
+
+  const visibleAdverts = useMemo(() => {
+    return adverts.filter((ad) => {
+      const id = ad?.campaignId?._id || ad?.campaignId;
+      return id && visibleCampaignIds.includes(id);
+    });
+  }, [adverts, visibleCampaignIds]);
 
   useEffect(() => {
     if (!selectedCampaign) {
@@ -111,7 +138,7 @@ export default function DashFinancials() {
 
   const selectedCampaignAdverts = selectedCampaign ? advertsByCampaign[selectedCampaign] || [] : [];
 
-  const campaignOptions = campaigns.map((campaign) => {
+  const campaignOptions = visibleCampaigns.map((campaign) => {
     const advertsCount = (advertsByCampaign[campaign._id] || []).length;
     const actualsRecorded = (advertsByCampaign[campaign._id] || []).filter((ad) => ad.actualCost > 0).length;
     return (
@@ -347,13 +374,13 @@ export default function DashFinancials() {
       <Card className='space-y-4'>
         <div className='flex items-center justify-between'>
           <h3 className='text-lg font-semibold text-gray-800 dark:text-white'>All Adverts (Browse View)</h3>
-          <Badge color='gray'>{adverts.length}</Badge>
+          <Badge color='gray'>{visibleAdverts.length}</Badge>
         </div>
         <div className='overflow-x-auto'>
-          {adverts.length === 0 ? (
-            <p className='text-sm text-gray-500 dark:text-gray-400'>No adverts recorded.</p>
+          {visibleAdverts.length === 0 ? (
+            <p className='text-sm text-gray-500 dark:text-gray-400'>No adverts recorded for your assigned campaigns.</p>
           ) : (
-            renderAdvertsTable(adverts, false)
+            renderAdvertsTable(visibleAdverts, false)
           )}
         </div>
       </Card>
