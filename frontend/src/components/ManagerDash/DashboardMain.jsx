@@ -57,10 +57,13 @@ export default function DashboardMain() {
       const relatedAdverts = adverts.filter(
         (advert) => (advert?.campaignId?._id || advert?.campaignId) === campaign._id
       );
-      const spend = relatedAdverts.reduce((sum, advert) => {
+      const advertSpend = relatedAdverts.reduce((sum, advert) => {
         const cost = advert.actualCost > 0 ? advert.actualCost : advert.estimatedCost;
         return sum + cost;
       }, 0);
+      const estimated = Number(campaign.estimatedCost || 0);
+      // Prefer real advert spend when present; fall back to campaign estimate if no ads yet
+      const spend = advertSpend > 0 ? advertSpend : estimated;
       const usage = campaign.budget > 0 ? spend / campaign.budget : 0;
       if (usage >= 1) {
         overBudget += 1;
@@ -91,6 +94,8 @@ export default function DashboardMain() {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 4);
   }, [conceptNotes]);
+
+  const totalBudgetAlerts = budgetInsights.alerts + budgetInsights.overBudget;
 
   return (
     <div className='relative isolate flex-1 p-4 md:p-7 space-y-6'>
@@ -146,7 +151,7 @@ export default function DashboardMain() {
             </span>
             <div>
               <p className='text-sm uppercase tracking-wide text-gray-500'>Budget Alerts</p>
-              <p className='text-3xl font-semibold text-gray-900 dark:text-white'>{budgetInsights.alerts}</p>
+              <p className='text-3xl font-semibold text-gray-900 dark:text-white'>{totalBudgetAlerts}</p>
             </div>
           </div>
           <div>
@@ -157,7 +162,7 @@ export default function DashboardMain() {
             <Progress progress={Math.min(budgetInsights.avgUsage, 100)} color='pink' />
           </div>
           <p className='text-sm text-gray-500 dark:text-gray-400'>
-            {budgetInsights.overBudget} campaign(s) already exceeded their limit.
+            {budgetInsights.overBudget} campaign(s) already exceeded their limit; {budgetInsights.alerts} near the threshold.
           </p>
         </Card>
 
